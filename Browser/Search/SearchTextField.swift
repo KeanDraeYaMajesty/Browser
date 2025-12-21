@@ -64,6 +64,16 @@ struct SearchTextField: View {
                 searchManager.searchText = ""
             }
         }
+        .onAppear {
+            if browserWindowState.searchOpenLocation != .none {
+                focusedField = .search
+            }
+            if browserWindowState.searchOpenLocation == .fromURLBar {
+                DispatchQueue.main.async {
+                    NSApplication.shared.sendAction(#selector(NSResponder.selectAll(_:)), to: nil, from: nil)
+                }
+            }
+        }
     }
     
     var searchIcon: some View {

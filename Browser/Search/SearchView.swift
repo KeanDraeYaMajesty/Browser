@@ -49,6 +49,11 @@ struct SearchView: View {
                 searchManager.setInitialValuesFromWindowState(browserWindowState)
             }
         }
+        .onAppear {
+            if browserWindowState.searchOpenLocation != .none {
+                searchManager.setInitialValuesFromWindowState(browserWindowState)
+            }
+        }
     }
     
     func closeSearchView() {
