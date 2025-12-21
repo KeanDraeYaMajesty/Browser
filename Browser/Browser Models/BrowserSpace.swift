@@ -128,8 +128,21 @@ final class BrowserSpace: Identifiable {
             }
         } else {
             // Close the tab (either not pinned or already suspended)
-            let index = loadedTabs.firstIndex(of: tab) ?? 0
-            let newTab = loadedTabs[safe: index == 0 ? 1 : index - 1]
+            let closingCurrent = currentTab == tab
+            
+            // Determine next tab ONLY if we are closing the current tab
+            var nextTab: BrowserTab? = currentTab
+            if closingCurrent {
+                let allTabsSnapshot = allTabs
+                let availableTabs = allTabsSnapshot.filter { $0 != tab }
+                if let index = allTabsSnapshot.firstIndex(of: tab) {
+                    if index < availableTabs.count {
+                        nextTab = availableTabs[index]
+                    } else {
+                        nextTab = availableTabs.last
+                    }
+                }
+            }
             
             unloadTab(tab)
             
@@ -145,8 +158,10 @@ final class BrowserSpace: Identifiable {
                 print("Error deleting tab: \(error)")
             }
             
-            withAnimation(.browserDefault) {
-                currentTab = newTab
+            if closingCurrent {
+                withAnimation(.browserDefault) {
+                    currentTab = nextTab
+                }
             }
         }
     }
