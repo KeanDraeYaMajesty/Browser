@@ -26,6 +26,8 @@ final class BrowserTab: Identifiable, Comparable {
     var type: BrowserTabType
 
     var isSuspended: Bool = false
+    var isClosed: Bool = false
+    var closedAt: Date? = nil
 
     @Relationship var browserSpace: BrowserSpace?
 

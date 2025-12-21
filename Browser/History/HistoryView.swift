@@ -13,8 +13,7 @@ struct HistoryView: View {
     var body: some View {
         TabView {
             Tab("Closed Tabs", systemImage: "xmark.app.fill") {
-                Text("Not yet implemented")
-                    .foregroundColor(.secondary)
+                ClosedTabsList()
             }
             
             Tab("All History", systemImage: "clock.fill") {

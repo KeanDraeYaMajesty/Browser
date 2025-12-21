@@ -26,23 +26,25 @@ final class BrowserSpace: Identifiable {
     
     var tabs: [BrowserTab] {
         get {
-            (unorderedTabs ?? []).sorted()
+            (unorderedTabs ?? []).filter { !$0.isClosed }.sorted()
         } set {
+            let closedTabs = (unorderedTabs ?? []).filter { $0.isClosed }
             newValue.enumerated().forEach { index, tab in
                 tab.order = index
             }
-            unorderedTabs = newValue
+            unorderedTabs = newValue + closedTabs
         }
     }
     
     var pinnedTabs: [BrowserTab] {
         get {
-            (unorderedPinnedTabs ?? []).sorted()
+            (unorderedPinnedTabs ?? []).filter { !$0.isClosed }.sorted()
         } set {
+            let closedTabs = (unorderedPinnedTabs ?? []).filter { $0.isClosed }
             newValue.enumerated().forEach { index, tab in
                 tab.order = index
             }
-            unorderedPinnedTabs = newValue
+            unorderedPinnedTabs = newValue + closedTabs
         }
     }
     
@@ -51,6 +53,12 @@ final class BrowserSpace: Identifiable {
     }
     
     var pinnedTabsVisible: Bool = true
+    
+    var recentlyClosedTabs: [BrowserTab] {
+        let allUnordered = (unorderedTabs ?? []) + (unorderedPinnedTabs ?? [])
+        return allUnordered.filter { $0.isClosed }
+            .sorted { ($0.closedAt ?? .distantPast) > ($1.closedAt ?? .distantPast) }
+    }
     
     @Attribute(.ephemeral) var currentTab: BrowserTab? = nil
     @Transient var loadedTabs: [BrowserTab] = []
@@ -144,18 +152,26 @@ final class BrowserSpace: Identifiable {
                 }
             }
             
-            unloadTab(tab)
+            // Note: We don't call unloadTab(tab) here because the user wants
+            // closed tabs to remain in memory for quick restoration.
             
             do {
-                if isPinned {
-                    pinnedTabs.removeAll(where: { $0.id == tab.id })
-                } else {
-                    tabs.removeAll(where: { $0.id == tab.id })
+                tab.isClosed = true
+                tab.closedAt = .now
+                
+                // Purge old closed tabs if there are too many (keep last 50)
+                let closed = recentlyClosedTabs
+                if closed.count > 50 {
+                    for i in 50..<closed.count {
+                        let oldTab = closed[i]
+                        unloadTab(oldTab)
+                        modelContext.delete(oldTab)
+                    }
                 }
-                modelContext.delete(tab)
+                
                 try modelContext.save()
             } catch {
-                print("Error deleting tab: \(error)")
+                print("Error closing tab: \(error)")
             }
             
             if closingCurrent {
@@ -163,6 +179,15 @@ final class BrowserSpace: Identifiable {
                     currentTab = nextTab
                 }
             }
+        }
+    }
+
+    func reopenTab(_ tab: BrowserTab, using modelContext: ModelContext) {
+        withAnimation(.browserDefault) {
+            tab.isClosed = false
+            tab.closedAt = nil
+            currentTab = tab
+            try? modelContext.save()
         }
     }
     
