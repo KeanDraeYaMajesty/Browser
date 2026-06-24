@@ -21,6 +21,8 @@ class SharedWebViewConfiguration {
         configuration.allowsAirPlayForMediaPlayback = true
         configuration.websiteDataStore = .default()
         configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.upgradeKnownHostsToHTTPS = true
+        configuration.applicationNameForUserAgent = "Zero"
 
         // Configure content blockers
         do {
@@ -30,7 +32,7 @@ class SharedWebViewConfiguration {
                     if let error {
                         print("🚫 Error compiling content blockers:", error)
                     } else if let list {
-                         self.configuration.userContentController.add(list)
+                        self.configuration.userContentController.add(list)
                     }
                 }
             }
@@ -38,13 +40,19 @@ class SharedWebViewConfiguration {
             print("🚫 Error loading content blockers:", error)
         }
 
-        // Configure shared preferences
-    let preferences = WKPreferences()
-    preferences.isElementFullscreenEnabled = true
-    configuration.preferences = preferences
+        let preferences = WKPreferences()
+        preferences.isElementFullscreenEnabled = true
+        preferences.isTextInteractionEnabled = true
+        configuration.preferences = preferences
 
         let webPagePreferences = WKWebpagePreferences()
         webPagePreferences.allowsContentJavaScript = true
         configuration.defaultWebpagePreferences = webPagePreferences
+    }
+
+    /// User agent string from the system WebKit build, with the app name appended.
+    var userAgent: String {
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        return webView.value(forKey: "userAgent") as? String ?? ""
     }
 }

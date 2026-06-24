@@ -44,10 +44,9 @@ class WKWebViewController: NSViewController {
         view = webView
 
         webView.allowsBackForwardNavigationGestures = true
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15 (Browser)"
         webView.allowsMagnification = true
-    webView.allowsLinkPreview = true // TODO: Implement my own preview later...
-    webView.isInspectable = true
+        webView.allowsLinkPreview = true // TODO: Implement my own preview later...
+        webView.isInspectable = true
 
         // Make webView background transparent
         webView.setValue(false, forKey: "drawsBackground")
