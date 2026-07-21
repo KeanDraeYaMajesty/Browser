@@ -53,11 +53,11 @@ extension WKWebViewController: WKScriptMessageHandler {
 
     func handleHoverURL(_ body: Any) {
         guard let url = body as? String, !url.isEmpty else { return }
-        self.coordinator.setHoverURL(to: url)
+        self.coordinator?.setHoverURL(to: url)
     }
 
     func handleMiddleClickLink(_ body: Any) {
         guard let urlString = body as? String, let url = URL(string: urlString) else { return }
-        self.coordinator.openLinkInNewTabAction(url)
+        self.coordinator?.openLinkInNewTabAction(url)
     }
 }

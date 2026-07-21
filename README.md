@@ -41,6 +41,7 @@ https://github.com/user-attachments/assets/90738982-651a-4991-8580-866325d1d128
 - [x] Tab Suspension 
 - [x] Multiple Windows
 - [x] **Firefox / Chrome WebExtensions** (MV2/MV3 via system `WKWebExtension`, including `.xpi`)
+- [x] **Stability baselines** — WebContent crash recovery, Cmd+Shift+T reopen closed tab, discard WebViews on close/suspend, restore last selected tab, No-Trace/Temporary data isolation
 - [ ] Grid Layout
 - [ ] Undo and Redo Closed Tabs
 

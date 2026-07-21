@@ -138,7 +138,9 @@ class BrowserAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     func deleteTemporaryImages() {
         let temporaryDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("Zero", isDirectory: true)
         let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: temporaryDirectory.path) else { return }
         do {
             let files = try fileManager.contentsOfDirectory(at: temporaryDirectory, includingPropertiesForKeys: nil, options: [])
             for file in files {

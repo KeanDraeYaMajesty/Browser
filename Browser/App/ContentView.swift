@@ -9,8 +9,12 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State var browserWindowState = BrowserWindowState()
+    @State var browserWindowState: BrowserWindowState
     @EnvironmentObject var userPreferences: UserPreferences
+
+    init(windowID: String = "BrowserWindow") {
+        _browserWindowState = State(initialValue: BrowserWindowState(windowID: windowID))
+    }
 
     @ViewBuilder
     private var mainFrameWithBackground: some View {
@@ -52,7 +56,7 @@ struct ContentView: View {
                 ExtensionManager.shared.registerWindow(
                     state: browserWindowState,
                     nsWindow: NSApp.keyWindow,
-                    isPrivate: browserWindowState.isNoTraceWindow
+                    isPrivate: browserWindowState.usesNonPersistentWebsiteData
                 )
             }
             .onDisappear {

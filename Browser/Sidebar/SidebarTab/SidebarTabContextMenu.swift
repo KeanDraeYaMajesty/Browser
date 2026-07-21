@@ -79,11 +79,11 @@ struct SidebarTabContextMenu: View {
         let duplicateTab = BrowserTab(title: browserTab.title, favicon: browserTab.favicon, url: browserTab.url, order: browserTab.order + 1, browserSpace: browserTab.browserSpace)
         if browserTab.browserSpace?.pinnedTabs.contains(browserTab) == false {
             browserWindowState.currentSpace?.tabs.insert(duplicateTab, at: browserTab.order + 1)
-            browserWindowState.currentSpace?.currentTab = duplicateTab
         } else {
             browserWindowState.currentSpace?.pinnedTabs.insert(duplicateTab, at: browserTab.order + 1)
-            browserWindowState.currentSpace?.currentTab = duplicateTab
         }
+        try? modelContext.save()
+        browserWindowState.currentSpace?.selectTab(duplicateTab)
     }
     
     /// Suspend the tab
@@ -93,7 +93,7 @@ struct SidebarTabContextMenu: View {
             let space = browserWindowState.currentSpace
             // Find another tab that's not suspended
             let newTab = space?.allTabs.first(where: { $0 != browserTab && !$0.isSuspended })
-            browserWindowState.currentSpace?.currentTab = newTab
+            space?.selectTab(newTab)
         }
         
         browserTab.isSuspended = true
@@ -105,33 +105,23 @@ struct SidebarTabContextMenu: View {
         browserWindowState.currentSpace?.closeTab(browserTab, using: modelContext)
     }
     
-    /// Close (delete) the tabs below the current tab
+    /// Close tabs below via soft-close so Cmd+Shift+T can restore them
     func closeTabsBelow() {
         guard let currentSpace = browserWindowState.currentSpace,
                 let index = currentSpace.tabs.firstIndex(where: { $0.id == browserTab.id })
         else { return }
         
-        withAnimation(.browserDefault) {
-            for tab in currentSpace.tabs.suffix(from: index + 1) {
-                currentSpace.unloadTab(tab)
-                modelContext.delete(tab)
-            }
-            try? modelContext.save()
-        }
+        let tabsToClose = Array(currentSpace.tabs.suffix(from: index + 1))
+        currentSpace.softCloseTabs(tabsToClose, using: modelContext)
     }
     
-    /// Close (delete) the tabs above the current tab
+    /// Close tabs above via soft-close so Cmd+Shift+T can restore them
     func closeTabsAbove() {
         guard let currentSpace = browserWindowState.currentSpace,
                 let index = currentSpace.tabs.firstIndex(where: { $0.id == browserTab.id })
         else { return }
         
-        withAnimation(.browserDefault) {
-            for tab in currentSpace.tabs.prefix(upTo: index) {
-                currentSpace.unloadTab(tab)
-                modelContext.delete(tab)
-            }
-            try? modelContext.save()
-        }
+        let tabsToClose = Array(currentSpace.tabs.prefix(upTo: index))
+        currentSpace.softCloseTabs(tabsToClose, using: modelContext)
     }
 }

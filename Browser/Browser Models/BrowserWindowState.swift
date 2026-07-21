@@ -13,7 +13,7 @@ import SwiftData
     
     var currentSpace: BrowserSpace? = nil {
         didSet {
-            if isMainBrowserWindow && !isNoTraceWindow {
+            if isMainBrowserWindow && !isNoTraceWindow && !isTemporaryWindow {
                 if let newValue = currentSpace {
                     UserDefaults.standard.set(newValue.id.uuidString, forKey: "currentBrowserSpace")
                 } else {
@@ -45,19 +45,24 @@ import SwiftData
     
     var showTabSwitcher = false
 
-    private(set) var isMainBrowserWindow: Bool = true
-    private(set) var isNoTraceWindow: Bool = false
-    
-    init() {
-        DispatchQueue.main.async {
-            if let windowId = NSApp.keyWindow?.identifier?.rawValue {
-                self.isMainBrowserWindow = windowId.hasPrefix("BrowserWindow")
-                self.isNoTraceWindow = windowId.hasPrefix("BrowserNoTraceWindow")
-            }
-        }
+    private(set) var windowID: String
+    private(set) var isMainBrowserWindow: Bool
+    private(set) var isNoTraceWindow: Bool
+    private(set) var isTemporaryWindow: Bool
+
+    /// True when website data must not persist (No-Trace or Temporary windows).
+    var usesNonPersistentWebsiteData: Bool {
+        isNoTraceWindow || isTemporaryWindow
     }
     
-    /// Loads the current space from the UserDefaults and sets it as the current space
+    init(windowID: String = "BrowserWindow") {
+        self.windowID = windowID
+        self.isMainBrowserWindow = windowID.hasPrefix("BrowserWindow")
+        self.isNoTraceWindow = windowID.hasPrefix("BrowserNoTraceWindow")
+        self.isTemporaryWindow = windowID.hasPrefix("BrowserTemporaryWindow")
+    }
+    
+    /// Loads the current space from the UserDefaults and restores its last selected tab.
     @Sendable
     func loadCurrentSpace(browserSpaces: [BrowserSpace]) {
         guard let spaceId = UserDefaults.standard.string(forKey: "currentBrowserSpace"),
@@ -65,6 +70,7 @@ import SwiftData
         
         if let space = browserSpaces.first(where: { $0.id == uuid }) {
             goToSpace(space)
+            space.restoreSelectedTab()
         }
     }
     
@@ -88,6 +94,7 @@ import SwiftData
             self.currentSpace = space
             self.viewScrollState = space?.id
         }
+        space?.restoreSelectedTab()
     }
     
     /// Copies the URL of the current tab to the clipboard
@@ -118,7 +125,7 @@ import SwiftData
             let insertionIndex = isCurrentTabPinned ? currentSpace.tabs.count : currentTab.order + 1
             let newTab = BrowserTab(title: backItem.title ?? "", favicon: nil, url: backItem.url, browserSpace: currentSpace)
             currentSpace.tabs.insert(newTab, at: insertionIndex)
-            currentSpace.currentTab = newTab
+            currentSpace.selectTab(newTab)
         } else {
             currentTab.webview?.goBack()
         }
@@ -135,7 +142,7 @@ import SwiftData
             let insertionIndex = isCurrentTabPinned ? currentSpace.tabs.count : currentTab.order + 1
             let newTab = BrowserTab(title: forwardItem.title ?? "", favicon: nil, url: forwardItem.url, browserSpace: currentSpace)
             currentSpace.tabs.insert(newTab, at: insertionIndex)
-            currentSpace.currentTab = newTab
+            currentSpace.selectTab(newTab)
         } else {
             currentTab.webview?.goForward()
         }
@@ -151,9 +158,19 @@ import SwiftData
             let insertionIndex = isCurrentTabPinned ? currentSpace.tabs.count : currentTab.order + 1
             let newTab = BrowserTab(title: currentTab.title, favicon: currentTab.favicon, url: currentTab.url, browserSpace: currentSpace)
             currentSpace.tabs.insert(newTab, at: insertionIndex)
-            currentSpace.currentTab = newTab
+            currentSpace.selectTab(newTab)
         } else {
             currentTab.reload()
         }
+    }
+
+    /// Reopen the most recently closed tab in the current space (Cmd+Shift+T).
+    @discardableResult
+    func reopenLastClosedTab(using modelContext: ModelContext) -> Bool {
+        guard let space = currentSpace,
+              let tab = space.recentlyClosedTabs.first else { return false }
+        space.reopenTab(tab, using: modelContext)
+        presentActionAlert(message: "Reopened Tab", systemImage: "arrow.uturn.backward.circle")
+        return true
     }
 }

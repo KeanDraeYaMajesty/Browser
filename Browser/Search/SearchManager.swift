@@ -112,7 +112,7 @@ class SearchManager {
             print("Error opening new tab: \(error)")
         }
 
-        browserWindowState.currentSpace?.currentTab = newTab
+        browserWindowState.currentSpace?.selectTab(newTab)
     }
 
     /// Opens the search suggestion in the current tab

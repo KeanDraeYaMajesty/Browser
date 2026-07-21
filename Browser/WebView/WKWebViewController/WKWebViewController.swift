@@ -19,11 +19,12 @@ class WKWebViewController: NSViewController {
     var webView: MyWKWebView
     let configuration: WKWebViewConfiguration
 
-    weak var coordinator: WKWebViewControllerRepresentable.Coordinator!
+    weak var coordinator: WKWebViewControllerRepresentable.Coordinator?
 
     var activeDownloads: [(download: WKDownload, bookmarkData: Data, fileName: String)] = []
 
     private var suspendTimer: DispatchSourceTimer?
+    private var didTearDown = false
 
     init(tab: BrowserTab, browserSpace: BrowserSpace, noTrace: Bool = false, using modelContext: ModelContext, userPreferences: UserPreferences) {
         self.tab = tab
@@ -53,11 +54,17 @@ class WKWebViewController: NSViewController {
         webView.navigationDelegate = self
         webView.uiDelegate = self
 
-        webView.searchWebAction = coordinator.searchWebAction(_:)
-        webView.openLinkInNewTabAction = coordinator.openLinkInNewTabAction(_:)
-        webView.presentActionAlert = coordinator.presentActionAlert(message:systemImage:)
+        webView.searchWebAction = { [weak self] query in
+            self?.coordinator?.searchWebAction(query)
+        }
+        webView.openLinkInNewTabAction = { [weak self] url in
+            self?.coordinator?.openLinkInNewTabAction(url)
+        }
+        webView.presentActionAlert = { [weak self] message, systemImage in
+            self?.coordinator?.presentActionAlert(message: message, systemImage: systemImage)
+        }
 
-        coordinator.observeWebView(webView)
+        coordinator?.observeWebView(webView)
 
         webView.load(URLRequest(url: tab.url))
 
@@ -66,18 +73,42 @@ class WKWebViewController: NSViewController {
 
     deinit {
         print("🔵 WKWebViewController deinit \(tab.title)")
-        cleanup()
+        tearDownWebView(notifyExtensions: false)
+    }
+
+    /// Fully discard the WebView process so closed/suspended tabs do not retain memory.
+    func tearDownWebView(notifyExtensions: Bool) {
+        guard !didTearDown else { return }
+        didTearDown = true
+
+        cancelSuspendTimer()
+        removeScriptMessageHandlers()
+
+        webView.navigationDelegate = nil
+        webView.uiDelegate = nil
+        webView.stopLoading()
+        webView.loadHTMLString("", baseURL: nil)
+        webView.removeFromSuperview()
+
+        coordinator?.stopObservingWebView(notifyClosed: notifyExtensions)
+
+        tab.webview = nil
+        if tab.viewController === self {
+            tab.viewController = nil
+        }
     }
 
     func cleanup() {
-        // Only deinit if the tab is not loaded or was closed
-        if !browserSpace.loadedTabs.contains(tab) {
-            cancelSuspendTimer()
-            webView.stopLoading()
-            webView.loadHTMLString("", baseURL: nil)
-            webView.removeFromSuperview()
-            coordinator.stopObservingWebView()
+        // Only tear down when the tab is no longer kept in the live stack.
+        if !browserSpace.loadedTabs.contains(where: { $0.id == tab.id }) {
+            tearDownWebView(notifyExtensions: false)
         }
+    }
+
+    private func removeScriptMessageHandlers() {
+        let controller = configuration.userContentController
+        controller.removeScriptMessageHandler(forName: "hoverURL")
+        controller.removeScriptMessageHandler(forName: "middleClickLink")
     }
 
     func startSuspendTimer() {
@@ -92,19 +123,21 @@ class WKWebViewController: NSViewController {
 
         suspendTimer?.cancel()
 
-        suspendTimer = DispatchSource.makeTimerSource(queue: .main)
-        suspendTimer?.schedule(deadline: .now() + 60 * 10) // 10 minutes
-        suspendTimer?.setEventHandler {
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + 60 * 10) // 10 minutes
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
             // Don't suspend if the tab is currently active.
             if self.browserSpace.currentTab == self.tab {
                 self.resetSuspendTimer()
             } else {
                 self.tab.isSuspended = true
-                self.coordinator.parent.browserSpace.unloadTab(self.coordinator.parent.tab)
+                self.browserSpace.unloadTab(self.tab)
             }
         }
 
-        suspendTimer?.resume()
+        suspendTimer = timer
+        timer.resume()
     }
 
     func resetSuspendTimer() {

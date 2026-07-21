@@ -31,7 +31,7 @@ extension WKWebViewController: WKDownloadDelegate {
                         let destinationURL = downloadLocation.appendingPathComponent("\(suggestedFilename).browserdownload").uniqueFileURL()
                         activeDownloads.append((download: download, bookmarkData: bookmarkData, fileName: destinationURL.lastPathComponent))
                         completionHandler(destinationURL)
-                        coordinator.toggleDownloadAnimation()
+                        coordinator?.toggleDownloadAnimation()
                         downloadLocation.stopAccessingSecurityScopedResource()
                         return
                     }
@@ -49,10 +49,22 @@ extension WKWebViewController: WKDownloadDelegate {
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
         panel.title = "Select Download Location For \"\(suggestedFilename)\""
-        panel.begin { response in
+        panel.begin { [weak self] response in
+            guard let self else {
+                completionHandler(nil)
+                return
+            }
             if response == .OK, let url = panel.url {
-                completionHandler(url.appendingPathComponent("\(suggestedFilename).browserdownload").uniqueFileURL())
-                self.coordinator.toggleDownloadAnimation()
+                do {
+                    let bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                    let destinationURL = url.appendingPathComponent("\(suggestedFilename).browserdownload").uniqueFileURL()
+                    self.activeDownloads.append((download: download, bookmarkData: bookmark, fileName: destinationURL.lastPathComponent))
+                    completionHandler(destinationURL)
+                    self.coordinator?.toggleDownloadAnimation()
+                } catch {
+                    print("⬇️ 🔴 Error creating download bookmark: \(error.localizedDescription)")
+                    completionHandler(nil)
+                }
             } else {
                 completionHandler(nil)
             }

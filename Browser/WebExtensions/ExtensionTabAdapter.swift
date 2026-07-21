@@ -103,7 +103,7 @@ final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
     }
 
     func activate(for extensionContext: WKWebExtensionContext, completionHandler: @escaping (Error?) -> Void) {
-        tab.browserSpace?.currentTab = tab
+        tab.browserSpace?.selectTab(tab)
         if let windowAdapter {
             ExtensionManager.shared.focusWindow(windowAdapter)
         }
@@ -116,7 +116,7 @@ final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
 
     func setSelected(_ selected: Bool, for extensionContext: WKWebExtensionContext, completionHandler: @escaping (Error?) -> Void) {
         if selected {
-            tab.browserSpace?.currentTab = tab
+            tab.browserSpace?.selectTab(tab)
         }
         completionHandler(nil)
     }

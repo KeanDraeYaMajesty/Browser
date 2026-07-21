@@ -64,7 +64,7 @@ struct Sidebar: View {
     
     func createSpace() {
         do {
-            let nextIndex = browserSpaces.firstIndex(where: { $0.id == browserWindowState.currentSpace?.id }) ?? -1 + 1
+            let nextIndex = (browserSpaces.firstIndex(where: { $0.id == browserWindowState.currentSpace?.id }) ?? -1) + 1
             
             var newSpace: BrowserSpace
             

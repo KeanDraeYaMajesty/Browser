@@ -300,7 +300,8 @@ final class ExtensionManager: NSObject, ObservableObject {
         let context = WKWebExtensionContext(for: webExtension)
         context.uniqueIdentifier = extensionID
         context.isInspectable = true
-        context.hasAccessToPrivateData = true
+        // Private browsing data access is granted per-window via adapters; default deny.
+        context.hasAccessToPrivateData = false
 
         for permission in webExtension.requestedPermissions {
             context.setPermissionStatus(.grantedExplicitly, for: permission)
@@ -457,6 +458,12 @@ final class ExtensionManager: NSObject, ObservableObject {
         guard let adapter = tabAdapters[tab.id] else { return }
         controller?.didCloseTab(adapter, windowIsClosing: windowIsClosing)
         tabAdapters.removeValue(forKey: tab.id)
+    }
+
+    /// Suspend/discard keeps the logical tab alive for extensions; only loading/URL state changes.
+    func notifyTabSuspended(_ tab: BrowserTab) {
+        guard tabAdapters[tab.id] != nil else { return }
+        notifyTabPropertiesChanged(tab, properties: [.loading])
     }
 
     func notifyTabActivated(newTab: BrowserTab?, previousTab: BrowserTab?) {

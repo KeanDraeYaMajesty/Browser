@@ -27,7 +27,7 @@ struct BrowserApp: App {
     @SceneBuilder
     func BrowserWindow(_ id: String, inMemory: Bool = false) -> some Scene {
         WindowGroup(id: id) {
-            ContentView()
+            ContentView(windowID: id)
                 .environmentObject(appDelegate.userPreferences)
                 .transaction {
                     $0.disablesAnimations = appDelegate.userPreferences.disableAnimations

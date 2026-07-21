@@ -23,7 +23,10 @@ struct SearchSuggestion: Identifiable, Equatable {
     }
     
     var suggestedURL: URL {
-        isURLValid ? url! : itemURL
+        if isURLValid, let url {
+            return url
+        }
+        return itemURL
     }
     
     init(_ title: String, itemURL: URL, favicon: URL? = nil) {

@@ -20,6 +20,9 @@ final class BrowserSpace: Identifiable {
     var grainOpacity: Double
     var colorOpacity: Double
     var colorScheme: String
+
+    /// Persisted so relaunch can restore the last selected tab in this space.
+    var lastSelectedTabID: UUID?
     
     @Relationship(deleteRule: .cascade, inverse: \BrowserTab.browserSpace) private var unorderedTabs: [BrowserTab]?
     @Relationship(deleteRule: .cascade) private var unorderedPinnedTabs: [BrowserTab]?
@@ -108,68 +111,89 @@ final class BrowserSpace: Identifiable {
     @Transient var getColors: [Color] {
         colors.map { Color(hex: $0) ?? .clear }
     }
-    
-    /// Removes a tab from the ZStack of WebViews of the space
-    func unloadTab(_ tab: BrowserTab) {
-        loadedTabs.removeAll(where: { $0.id == tab.id })
+
+    func selectTab(_ tab: BrowserTab?) {
+        currentTab = tab
+        lastSelectedTabID = tab?.id
+    }
+
+    /// Restore the last selected tab after relaunch / space switch.
+    func restoreSelectedTab() {
+        guard currentTab == nil else { return }
+        if let lastSelectedTabID,
+           let tab = allTabs.first(where: { $0.id == lastSelectedTabID }) {
+            currentTab = tab
+        } else {
+            currentTab = allTabs.first
+            lastSelectedTabID = currentTab?.id
+        }
     }
     
-    /// Closes (deletes) a tab from the space and selects the next tab
+    /// Removes a tab from the ZStack of WebViews of the space and discards its WebKit process.
+    func unloadTab(_ tab: BrowserTab) {
+        loadedTabs.removeAll(where: { $0.id == tab.id })
+        tab.viewController?.tearDownWebView(notifyExtensions: false)
+        tab.webview = nil
+        tab.viewController = nil
+    }
+
+    /// Soft-close a tab: keep metadata for Cmd+Shift+T restore, discard WebView memory.
+    private func softClose(_ tab: BrowserTab, using modelContext: ModelContext) {
+        unloadTab(tab)
+        tab.isClosed = true
+        tab.closedAt = .now
+        tab.isSuspended = false
+        tab.clearError()
+        ExtensionManager.shared.notifyTabClosed(tab)
+
+        // Purge old closed tabs if there are too many (keep last 50)
+        let closed = recentlyClosedTabs
+        if closed.count > 50 {
+            for i in 50..<closed.count {
+                let oldTab = closed[i]
+                unloadTab(oldTab)
+                modelContext.delete(oldTab)
+            }
+        }
+    }
+    
+    /// Closes a tab from the space and selects the next tab
     /// For pinned tabs: suspends if not suspended, closes if suspended
     func closeTab(_ tab: BrowserTab, using modelContext: ModelContext) {
         let isPinned = pinnedTabs.contains(tab)
         
         if isPinned && !tab.isSuspended {
-            // Suspend the pinned tab
+            // Suspend the pinned tab (discard WebView, keep tab in sidebar)
             tab.isSuspended = true
             unloadTab(tab)
             try? modelContext.save()
             
             // Select next tab if current tab was suspended
             if currentTab == tab {
-                // Find the next available non-suspended tab
-                let availableTabs = allTabs.filter { !$0.isSuspended && $0 != tab }
-                let newTab = availableTabs.first
-                withAnimation(.browserDefault) {
-                    currentTab = newTab
-                }
+                let availableTabs = allTabs.filter { !$0.isSuspended && $0.id != tab.id }
+                selectTab(availableTabs.first)
             }
         } else {
-            // Close the tab (either not pinned or already suspended)
-            let closingCurrent = currentTab == tab
+            let closingCurrent = currentTab?.id == tab.id
             
-            // Determine next tab ONLY if we are closing the current tab
+            // Neighbor selection uses the pre-close ordered list so we pick the
+            // next/previous tab correctly (not an index into the filtered array).
             var nextTab: BrowserTab? = currentTab
             if closingCurrent {
-                let allTabsSnapshot = allTabs
-                let availableTabs = allTabsSnapshot.filter { $0 != tab }
-                if let index = allTabsSnapshot.firstIndex(of: tab) {
-                    if index < availableTabs.count {
-                        nextTab = availableTabs[index]
+                let snapshot = allTabs
+                if let index = snapshot.firstIndex(where: { $0.id == tab.id }) {
+                    if index + 1 < snapshot.count {
+                        nextTab = snapshot[index + 1]
+                    } else if index > 0 {
+                        nextTab = snapshot[index - 1]
                     } else {
-                        nextTab = availableTabs.last
+                        nextTab = nil
                     }
                 }
             }
             
-            // Note: We don't call unloadTab(tab) here because the user wants
-            // closed tabs to remain in memory for quick restoration.
-            
             do {
-                tab.isClosed = true
-                tab.closedAt = .now
-                ExtensionManager.shared.notifyTabClosed(tab)
-                
-                // Purge old closed tabs if there are too many (keep last 50)
-                let closed = recentlyClosedTabs
-                if closed.count > 50 {
-                    for i in 50..<closed.count {
-                        let oldTab = closed[i]
-                        unloadTab(oldTab)
-                        modelContext.delete(oldTab)
-                    }
-                }
-                
+                softClose(tab, using: modelContext)
                 try modelContext.save()
             } catch {
                 print("Error closing tab: \(error)")
@@ -177,7 +201,7 @@ final class BrowserSpace: Identifiable {
             
             if closingCurrent {
                 withAnimation(.browserDefault) {
-                    currentTab = nextTab
+                    selectTab(nextTab)
                 }
             }
         }
@@ -187,7 +211,28 @@ final class BrowserSpace: Identifiable {
         withAnimation(.browserDefault) {
             tab.isClosed = false
             tab.closedAt = nil
-            currentTab = tab
+            tab.isSuspended = false
+            tab.clearError()
+            // Ensure a fresh WebView is created on select.
+            unloadTab(tab)
+            selectTab(tab)
+            try? modelContext.save()
+        }
+    }
+
+    /// Soft-close many tabs (Clear / Close Above/Below) so they remain undoable.
+    func softCloseTabs(_ tabsToClose: [BrowserTab], using modelContext: ModelContext) {
+        guard !tabsToClose.isEmpty else { return }
+        let closingCurrent = tabsToClose.contains(where: { $0.id == currentTab?.id })
+        let remaining = allTabs.filter { tab in !tabsToClose.contains(where: { $0.id == tab.id }) }
+
+        withAnimation(.browserDefault) {
+            for tab in tabsToClose {
+                softClose(tab, using: modelContext)
+            }
+            if closingCurrent {
+                selectTab(remaining.first)
+            }
             try? modelContext.save()
         }
     }
@@ -196,15 +241,7 @@ final class BrowserSpace: Identifiable {
         let deletedTabs = tabs.filter {
             UserDefaults.standard.bool(forKey: "clear_selected_tab") ? true : $0 != currentTab
         }
-        
-        withAnimation(.browserDefault) {
-            deletedTabs.forEach { unloadTab($0) }
-            let uuids = deletedTabs.map(\.id)
-            try? modelContext.delete(model: BrowserTab.self, where: #Predicate {
-                uuids.contains($0.id)
-            })
-            try? modelContext.save()
-        }
+        softCloseTabs(deletedTabs, using: modelContext)
     }
     
     /// Opens a new tab in the space
@@ -216,7 +253,7 @@ final class BrowserSpace: Identifiable {
             tabs.insert(browserTab, at: browserTab.order)
             try modelContext.save()
             if select {
-                currentTab = browserTab
+                selectTab(browserTab)
             } else {
                 loadedTabs.append(browserTab)
             }
