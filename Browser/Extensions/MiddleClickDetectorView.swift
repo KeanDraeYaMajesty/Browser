@@ -23,7 +23,7 @@ final class MiddleClickDetectorView: NSView {
 
         // local monitor sees events before the normal event dispatch
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .otherMouseDown) { [weak self] event in
-            guard let self = self, let window = self.window else { return event }
+            guard let self, self.window != nil else { return event }
 
             // Convert the event's window coords into this view's local coords
             let pointInWindow = event.locationInWindow

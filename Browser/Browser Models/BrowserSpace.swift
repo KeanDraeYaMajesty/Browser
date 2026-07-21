@@ -130,6 +130,7 @@ final class BrowserSpace: Identifiable {
     }
     
     /// Removes a tab from the ZStack of WebViews of the space and discards its WebKit process.
+    @MainActor
     func unloadTab(_ tab: BrowserTab) {
         loadedTabs.removeAll(where: { $0.id == tab.id })
         tab.viewController?.tearDownWebView(notifyExtensions: false)
@@ -138,6 +139,7 @@ final class BrowserSpace: Identifiable {
     }
 
     /// Soft-close a tab: keep metadata for Cmd+Shift+T restore, discard WebView memory.
+    @MainActor
     private func softClose(_ tab: BrowserTab, using modelContext: ModelContext) {
         unloadTab(tab)
         tab.isClosed = true
@@ -159,6 +161,7 @@ final class BrowserSpace: Identifiable {
     
     /// Closes a tab from the space and selects the next tab
     /// For pinned tabs: suspends if not suspended, closes if suspended
+    @MainActor
     func closeTab(_ tab: BrowserTab, using modelContext: ModelContext) {
         let isPinned = pinnedTabs.contains(tab)
         
@@ -207,6 +210,7 @@ final class BrowserSpace: Identifiable {
         }
     }
 
+    @MainActor
     func reopenTab(_ tab: BrowserTab, using modelContext: ModelContext) {
         withAnimation(.browserDefault) {
             tab.isClosed = false
@@ -221,6 +225,7 @@ final class BrowserSpace: Identifiable {
     }
 
     /// Soft-close many tabs (Clear / Close Above/Below) so they remain undoable.
+    @MainActor
     func softCloseTabs(_ tabsToClose: [BrowserTab], using modelContext: ModelContext) {
         guard !tabsToClose.isEmpty else { return }
         let closingCurrent = tabsToClose.contains(where: { $0.id == currentTab?.id })
