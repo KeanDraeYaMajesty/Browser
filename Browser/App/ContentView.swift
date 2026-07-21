@@ -11,6 +11,7 @@ import SwiftData
 struct ContentView: View {
     @State var browserWindowState = BrowserWindowState()
     @EnvironmentObject var userPreferences: UserPreferences
+    @Environment(\.modelContext) private var modelContext
     
     @ViewBuilder
     private var mainFrameWithBackground: some View {
@@ -44,6 +45,23 @@ struct ContentView: View {
                     .background(.ultraThinMaterial)
                     .cornerRadius(16)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .webExtensionOpenURL)) { notification in
+                guard let url = notification.userInfo?["url"] as? URL else { return }
+                openExtensionURL(url)
+            }
+    }
 
+    private func openExtensionURL(_ url: URL) {
+        guard let space = browserWindowState.currentSpace else { return }
+        let newTab = BrowserTab(
+            title: url.cleanHost,
+            favicon: nil,
+            url: url,
+            order: space.tabs.count,
+            browserSpace: space
+        )
+        space.tabs.append(newTab)
+        try? modelContext.save()
+        space.currentTab = newTab
     }
 }

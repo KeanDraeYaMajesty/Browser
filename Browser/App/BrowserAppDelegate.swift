@@ -28,6 +28,10 @@ class BrowserAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         closeNotMainWindows()
         deleteTemporaryImages()
+        // Register the Firefox WebExtensions message bridge on the shared WK config.
+        WebExtensionManager.shared.ensureMessageHandler(
+            on: SharedWebViewConfiguration.shared.configuration.userContentController
+        )
     }
     
     func applicationWillTerminate(_ notification: Notification) {

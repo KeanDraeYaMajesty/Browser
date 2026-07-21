@@ -23,6 +23,12 @@ extension WKWebViewController: WKNavigationDelegate {
         if UserDefaults.standard.bool(forKey: "show_hover_url") {
             addHoverURLListener()
         }
+
+        WebExtensionTabRegistry.shared.update(webView: webView, url: url, isLoading: true)
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        WebExtensionManager.shared.injectContentScripts(into: webView, navigationTiming: .documentStart)
     }
     
     /// Called when the web view finishes loading a page
@@ -34,6 +40,9 @@ extension WKWebViewController: WKNavigationDelegate {
                 
         self.tab.webviewErrorCode = nil
         self.tab.webviewErrorDescription = nil
+
+        WebExtensionTabRegistry.shared.update(webView: webView, title: webView.title, url: url, isLoading: false)
+        WebExtensionManager.shared.injectContentScripts(into: webView, navigationTiming: .documentEnd)
         
         // Inject CSS if styles are enabled for this website
         if StyleManager.shared.areStylesEnabled(for: url),

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 2,
+  "name": "Hello Zero",
+  "version": "1.0.0",
+  "description": "Demo Firefox WebExtension for Zero — badges every page and stores a visit count.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hello-zero@zero.local"
+    }
+  },
+  "permissions": ["storage", "tabs"],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_action": {
+    "default_title": "Hello Zero",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "48": "icon.svg"
+  }
+}

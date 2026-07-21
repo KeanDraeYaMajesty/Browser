@@ -45,6 +45,25 @@ https://github.com/user-attachments/assets/90738982-651a-4991-8580-866325d1d128
 
 ## Building
 
-The project now links against the system-provided WebKit, so a custom WebKit.framework checkout is no longer required. Open `Browser.xcodeproj` and build the `Browser` scheme with the latest Xcode on macOS.
+The project links against the **system-provided WebKit** (no custom WebKit.framework checkout). Open `Zero.xcodeproj` and build the `Browser` scheme with a recent Xcode on macOS. Zero appends its app name to the system Safari user agent.
+
+## Firefox WebExtensions (experimental)
+
+Zero can load **Firefox-compatible WebExtensions** (Manifest V2 and basic Manifest V3):
+
+1. Open **Settings → Extensions**
+2. Install a `.xpi`, `.zip`, or unpacked extension folder — or click **Install Bundled Demo Extension**
+3. Reload pages to run content scripts
+
+**Supported today**
+
+- `content_scripts` (JS + CSS, match patterns, `run_at`)
+- Background scripts via JavaScriptCore (`background.scripts` / MV3 `service_worker` file)
+- `browser.runtime` (`getManifest`, `getURL`, `sendMessage`, `onMessage`, `id`)
+- `browser.storage.local`
+- `browser.tabs` subset (`query`, `get`, `getCurrent`, `create`, `sendMessage`, `executeScript`)
+- Toolbar icons for extensions that declare `browser_action` / `action`
+
+**Not yet:** full `webRequest` / `declarativeNetRequest`, privileged APIs, in-app popup HTML host, or AMO sideload signing checks. Treat this as an early runtime for content-script-centric add-ons.
 
 Credits to [LeonardoLarranaga/Browser](https://github.com/LeonardoLarranaga/Browser) for the open browser source <3

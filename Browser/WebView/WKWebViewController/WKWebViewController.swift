@@ -62,6 +62,11 @@ class WKWebViewController: NSViewController {
 
         coordinator.observeWebView(webView)
 
+        _ = WebExtensionTabRegistry.shared.register(webView: webView)
+        if browserSpace.currentTab == tab {
+            WebExtensionTabRegistry.shared.setActive(webView: webView)
+        }
+
         webView.load(URLRequest(url: tab.url))
 
         startSuspendTimer()
@@ -76,6 +81,7 @@ class WKWebViewController: NSViewController {
         // Only deinit if the tab is not loaded or was closed
         if !browserSpace.loadedTabs.contains(tab) {
             cancelSuspendTimer()
+            WebExtensionTabRegistry.shared.unregister(webView: webView)
             webView.stopLoading()
             webView.loadHTMLString("", baseURL: nil)
             webView.removeFromSuperview()

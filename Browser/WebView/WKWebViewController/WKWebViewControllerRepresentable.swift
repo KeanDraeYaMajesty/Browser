@@ -45,6 +45,11 @@ struct WKWebViewControllerRepresentable: NSViewControllerRepresentable {
         // Reset suspend timer if tab became visible (active)
         if wasHidden && !nsViewController.webView.isHidden {
             nsViewController.resetSuspendTimer()
+            WebExtensionTabRegistry.shared.setActive(webView: nsViewController.webView)
+        }
+
+        if tab == browserSpace.currentTab {
+            WebExtensionTabRegistry.shared.setActive(webView: nsViewController.webView)
         }
 
         // Apply transparency in case it changed
