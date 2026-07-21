@@ -30,7 +30,7 @@ extension WKWebViewController: WKNavigationDelegate {
         guard let url = webView.url else { return }
         print("🟢 Finished loading \(url.absoluteString)")
         
-        coordinator.addTabToHistory()
+        coordinator?.addTabToHistory()
                 
         self.tab.webviewErrorCode = nil
         self.tab.webviewErrorDescription = nil
@@ -62,15 +62,37 @@ extension WKWebViewController: WKNavigationDelegate {
         addMiddleClickLinkListener()
     }
     
-    /// Called when the web view fails loading a page
+    /// Called when the web view fails loading a page after commit
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        guard let url = webView.url else { return }
-        print("🔴 Failed loading \(url.absoluteString) with error: \(error.localizedDescription)")
+        let nsError = error as NSError
+        // NSURLErrorCancelled (-999) is expected when navigating away mid-load.
+        guard nsError.code != NSURLErrorCancelled else { return }
+
+        self.tab.webviewErrorDescription = nsError.localizedDescription
+        self.tab.webviewErrorCode = nsError.code
+        print("🔴 Failed loading \(webView.url?.absoluteString ?? "unknown") with error: \(nsError.localizedDescription)")
+    }
+
+    /// Recover when WebKit's content process dies — Zen/Firefox-class browsers always do this.
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        print("⚠️ WebContent process terminated for \(tab.url.absoluteString) — recovering")
+        tab.clearError()
+        tab.isLoading = true
+        // Prefer a full reload of the last known URL so the tab is usable again.
+        webView.load(URLRequest(url: tab.url))
+        browserWindowStateSafePresentRecovery()
+    }
+
+    private func browserWindowStateSafePresentRecovery() {
+        coordinator?.presentActionAlert(
+            message: "Page recovered after a crash",
+            systemImage: "arrow.clockwise.circle"
+        )
     }
     
     /// Called when the web view wants to create a new web view (open new tab)
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        coordinator.createNewTabFromAction(navigationAction)
+        coordinator?.createNewTabFromAction(navigationAction)
         return nil
     }
     

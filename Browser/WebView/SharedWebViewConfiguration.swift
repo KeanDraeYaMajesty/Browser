@@ -47,7 +47,7 @@ class SharedWebViewConfiguration {
         if let cachedUserAgent, !cachedUserAgent.isEmpty {
             return cachedUserAgent
         }
-        let webView = WKWebView(frame: .zero, configuration: configuration.copy() as! WKWebViewConfiguration)
+        let webView = WKWebView(frame: .zero, configuration: makeConfiguration())
         let value = webView.value(forKey: "userAgent") as? String ?? ""
         cachedUserAgent = value
         return value
@@ -61,7 +61,23 @@ class SharedWebViewConfiguration {
     /// Creates a per-tab configuration derived from the shared base.
     /// - Parameter noTrace: When true, uses a non-persistent data store (No-Trace / Temporary windows).
     func makeConfiguration(noTrace: Bool = false) -> WKWebViewConfiguration {
-        let config = configuration.copy() as! WKWebViewConfiguration
+        let config: WKWebViewConfiguration
+        if let copied = configuration.copy() as? WKWebViewConfiguration {
+            config = copied
+        } else {
+            // Extremely unlikely — WKWebViewConfiguration is NSCopying — but never crash.
+            config = WKWebViewConfiguration()
+            config.processPool = configuration.processPool
+            config.websiteDataStore = configuration.websiteDataStore
+            config.userContentController = configuration.userContentController
+            config.webExtensionController = configuration.webExtensionController
+            config.preferences = configuration.preferences
+            config.defaultWebpagePreferences = configuration.defaultWebpagePreferences
+            config.upgradeKnownHostsToHTTPS = configuration.upgradeKnownHostsToHTTPS
+            config.applicationNameForUserAgent = configuration.applicationNameForUserAgent
+            config.allowsAirPlayForMediaPlayback = configuration.allowsAirPlayForMediaPlayback
+            config.mediaTypesRequiringUserActionForPlayback = configuration.mediaTypesRequiringUserActionForPlayback
+        }
 
         if let contentRuleList {
             config.userContentController.removeAllContentRuleLists()

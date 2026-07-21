@@ -31,6 +31,12 @@ struct HistoryCommands: Commands {
             
             Divider()
             
+            Button("Reopen Closed Tab") {
+                _ = browserWindowState?.reopenLastClosedTab(using: modelContext)
+            }
+            .globalKeyboardShortcut(.reopenClosedTab)
+            .disabled(browserWindowState?.currentSpace?.recentlyClosedTabs.isEmpty != false)
+
             Button("Show History", action: showHistory)
                 .globalKeyboardShortcut(.showHistory)
             
@@ -43,12 +49,13 @@ struct HistoryCommands: Commands {
     
     func showHistory() {
         let favicon = ImageRenderer(content: Image(systemName: "arrow.counterclockwise.square.fill").resizable().frame(width: 32, height: 32).scaledToFit().foregroundStyle(.gray)).nsImage?.pngData
-        let historyTab = BrowserTab(title: "History", favicon: favicon, url: URL(string: "History")!, order: 0, browserSpace: browserWindowState?.currentSpace, type: .history)
+        guard let historyURL = URL(string: "History") else { return }
+        let historyTab = BrowserTab(title: "History", favicon: favicon, url: historyURL, order: 0, browserSpace: browserWindowState?.currentSpace, type: .history)
         
         do {
             browserWindowState?.currentSpace?.tabs.append(historyTab)
             try modelContext.save()
-            browserWindowState?.currentSpace?.currentTab = historyTab
+            browserWindowState?.currentSpace?.selectTab(historyTab)
         } catch {
             print("Error saving history tab: \(error)")
         }
@@ -61,8 +68,9 @@ extension KeyboardShortcuts.Name {
     
     static let showHistory = Self("show_history", default: .init(.y, modifiers: .command))
     static let clearHistory = Self("clear_history")
+    static let reopenClosedTab = Self("reopen_closed_tab", default: .init(.t, modifiers: [.command, .shift]))
 }
 
 extension [KeyboardShortcuts.Name] {
-    static let allHistoryCommands: [KeyboardShortcuts.Name] = [.goBack, .goForward, .showHistory, .clearHistory]
+    static let allHistoryCommands: [KeyboardShortcuts.Name] = [.goBack, .goForward, .showHistory, .clearHistory, .reopenClosedTab]
 }

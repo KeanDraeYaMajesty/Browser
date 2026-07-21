@@ -35,7 +35,9 @@ extension WKWebViewControllerRepresentable {
         /// Starts a Google search with the query in a new tab
         func searchWebAction(_ query: String) {
             let insertionOrder = calculateInsertionOrder()
-            let newTab = BrowserTab(title: query, url: URL(string: "https://www.google.com/search?q=\(query)")!, order: insertionOrder, browserSpace: self.parent.browserSpace)
+            let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+            guard let url = URL(string: "https://www.google.com/search?q=\(encoded)") else { return }
+            let newTab = BrowserTab(title: query, url: url, order: insertionOrder, browserSpace: self.parent.browserSpace)
             self.parent.browserSpace.openNewTab(newTab, using: self.parent.modelContext)
         }
         
@@ -47,7 +49,10 @@ extension WKWebViewControllerRepresentable {
         }
         
         func addTabToHistory() {
-            guard NSApp.isKeyWindowOfTypeMain else { return }
+            // Never record history from No-Trace / Temporary windows.
+            guard NSApp.isKeyWindowOfTypeMain,
+                  !self.parent.browserWindowState.isNoTraceWindow,
+                  !self.parent.browserWindowState.isTemporaryWindow else { return }
             do {
                 var fetchDescriptor = FetchDescriptor<BrowserHistoryEntry>(
                     sortBy: [.init(\.date, order: .reverse)],
@@ -78,7 +83,7 @@ extension WKWebViewControllerRepresentable {
                 let insertionOrder = calculateInsertionOrder()
                 let newTab = BrowserTab(title: url.cleanHost, url: url, order: insertionOrder, browserSpace: self.parent.browserSpace)
                 self.parent.browserSpace.openNewTab(newTab, using: self.parent.modelContext, select: false)
-                self.parent.browserSpace.currentTab = newTab
+                self.parent.browserSpace.selectTab(newTab)
             }
         }
         
@@ -139,10 +144,16 @@ extension WKWebViewControllerRepresentable {
                 .store(in: &cancellables)
         }
         
-        func stopObservingWebView() {
+        func stopObservingWebView(notifyClosed: Bool = false) {
             cancellables.forEach { $0.cancel() }
             cancellables.removeAll()
-            ExtensionManager.shared.notifyTabClosed(self.parent.tab)
+            // Only tell extensions the tab closed when the tab is truly closed —
+            // not when it is suspended / discarded for memory.
+            if notifyClosed {
+                ExtensionManager.shared.notifyTabClosed(self.parent.tab)
+            } else {
+                ExtensionManager.shared.notifyTabSuspended(self.parent.tab)
+            }
         }
         
         func setHoverURL(to url: String) {

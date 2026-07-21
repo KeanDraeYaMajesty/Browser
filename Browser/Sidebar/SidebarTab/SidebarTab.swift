@@ -105,17 +105,17 @@ struct SidebarTab: View {
     }
 
     func selectTab() {
-        browserSpace.currentTab = browserTab
+        browserSpace.selectTab(browserTab)
         
         // Load tab if not loaded
         if !browserSpace.loadedTabs.contains(browserTab) {
             browserSpace.loadedTabs.append(browserTab)
         }
         
-        // Reload suspended tab
+        // Suspended tabs discarded their WebView — clearing the flag lets WebViewStack recreate it.
         if browserTab.isSuspended {
             browserTab.isSuspended = false
-            browserTab.reload()
+            browserTab.clearError()
         }
         
         // Reset suspend timer for unpinned tabs

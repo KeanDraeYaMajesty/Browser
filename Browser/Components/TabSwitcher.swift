@@ -53,7 +53,7 @@ struct TabSwitcher: View {
                         if !event.modifierFlags.contains(modifiers) {
                             if let selectedTab = allLoadedTabs[safe: selectedTabIndex] {
                                 browserWindowState.goToSpace(selectedTab.browserSpace)
-                                browserWindowState.currentSpace?.currentTab = selectedTab
+                                selectedTab.browserSpace?.selectTab(selectedTab)
                                 browserWindowState.showTabSwitcher = false
                             }
                         }

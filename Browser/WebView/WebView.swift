@@ -24,7 +24,7 @@ struct WebView: View {
         Group {
             switch tab.type {
             case .web:
-                WKWebViewControllerRepresentable(tab: tab, browserSpace: browserSpace, noTrace: browserWindowState.isNoTraceWindow, hoverURL: $hoverURL)
+                WKWebViewControllerRepresentable(tab: tab, browserSpace: browserSpace, noTrace: browserWindowState.usesNonPersistentWebsiteData, hoverURL: $hoverURL)
                     .opacity(tab.webviewErrorCode != nil ? 0 : 1)
                     .overlay {
                         if tab.webviewErrorDescription != nil, let errorCode = tab.webviewErrorCode, errorCode != -999 {
@@ -50,17 +50,21 @@ struct WebView: View {
                     .onChange(of: hoverURL) {
                         guard !hoverURL.isEmpty else { return }
                         hoverURLTimer?.invalidate()
-                        
+
                         withAnimation(.browserDefault) {
                             showHoverURL = true
                         }
-                        
+
                         hoverURLTimer = Timer.scheduledTimer(withTimeInterval: 3.5, repeats: false) { _ in
                             withAnimation(.browserDefault) {
                                 showHoverURL = false
                                 hoverURL = ""
                             }
                         }
+                    }
+                    .onDisappear {
+                        hoverURLTimer?.invalidate()
+                        hoverURLTimer = nil
                     }
             case .history:
                 HistoryView(browserTab: tab)
