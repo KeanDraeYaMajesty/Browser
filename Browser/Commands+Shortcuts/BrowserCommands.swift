@@ -10,6 +10,7 @@ import SwiftUI
 struct BrowserCommands: Commands {
     
     @FocusedValue(\.browserActiveWindowState) var browserActiveWindowState
+    @Environment(\.openSettings) private var openSettings
     
     var isDefaultBrowser: Bool {
         NSWorkspace.shared.urlForDefaultBrowser == Bundle.main.bundleURL
@@ -20,6 +21,16 @@ struct BrowserCommands: Commands {
             Button("Acknowledgements...") {
                 browserActiveWindowState?.showAcknowledgements.toggle()
             }
+
+            Button("Extensions...") {
+                UserDefaults.standard.set(true, forKey: "open_extensions_settings_once")
+                openSettings()
+                // Also notify an already-open Settings window.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    NotificationCenter.default.post(name: .openExtensionsSettings, object: nil)
+                }
+            }
+            .keyboardShortcut("e", modifiers: [.command, .shift])
             
             Button("Set as Default Browser") {
                 let appURL = Bundle.main.bundleURL
