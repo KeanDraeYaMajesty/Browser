@@ -1,0 +1,17 @@
+#hello-zero-badge {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483646;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  letter-spacing: 0.02em;
+  color: #1c1408;
+  background: linear-gradient(135deg, #f6d58a 0%, #e8b86d 55%, #c9893a 100%);
+  box-shadow:
+    0 10px 28px rgba(28, 20, 8, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  opacity: 0.92;
+}

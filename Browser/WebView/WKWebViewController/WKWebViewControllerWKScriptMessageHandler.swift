@@ -27,8 +27,12 @@ extension WKWebViewController: WKScriptMessageHandler {
         controller.removeScriptMessageHandler(forName: "hoverURL")
         controller.add(self, name: "hoverURL")
 
-        let scriptMessage = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
-        controller.addUserScript(scriptMessage)
+        // Replace rather than accumulate — user scripts were previously appended on every navigation.
+        let existing = controller.userScripts.filter { !$0.source.contains("/* zero:hover-url */") }
+        controller.removeAllUserScripts()
+        existing.forEach { controller.addUserScript($0) }
+        let wrapped = "/* zero:hover-url */\n" + script
+        controller.addUserScript(WKUserScript(source: wrapped, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
     }
 
     func addMiddleClickLinkListener() {
@@ -40,8 +44,11 @@ extension WKWebViewController: WKScriptMessageHandler {
         controller.removeScriptMessageHandler(forName: "middleClickLink")
         controller.add(self, name: "middleClickLink")
 
-        let scriptMessage = WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
-        controller.addUserScript(scriptMessage)
+        let existing = controller.userScripts.filter { !$0.source.contains("/* zero:middle-click */") }
+        controller.removeAllUserScripts()
+        existing.forEach { controller.addUserScript($0) }
+        let wrapped = "/* zero:middle-click */\n" + script
+        controller.addUserScript(WKUserScript(source: wrapped, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
     }
 
     func handleHoverURL(_ body: Any) {
