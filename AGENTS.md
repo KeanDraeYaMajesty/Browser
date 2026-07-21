@@ -2,15 +2,14 @@
 
 ## Cursor Cloud specific instructions
 
-### Fork-only git policy (required)
+### Standalone repository (required)
 
-This checkout is the owner's fork: **`KeanDraeYaMajesty/Browser`**.
+`KeanDraeYaMajesty/Browser` is a **standalone** repository (left the fork network of `sameerasw/Browser` by agreement — Zero is taking a different product direction).
 
-- **`origin` must remain the fork.** All commits, branches, and PRs go to `KeanDraeYaMajesty/Browser` only.
-- **Never push, force-push, or open PRs against upstream** (`sameerasw/Browser`). Do not add upstream as a push remote.
-- Base PRs on the fork's `main` (or the fork branch the user names). Do not target `sameerasw/Browser`.
-- **Do not sync from the original browser by default.** Only fetch/merge/rebase from upstream when the user explicitly asks for a **major/big upstream update**. Small upstream noise should be ignored unless requested.
-- If upstream must be referenced for a one-off big sync, use a fetch-only remote (e.g. `upstream`) and merge into a fork branch; still open the PR on the fork.
+- **`origin` is this repo only.** All commits, branches, and PRs go to `KeanDraeYaMajesty/Browser`.
+- **Do not treat `sameerasw/Browser` as upstream.** Do not add it as a remote, fetch/merge/rebase from it, or open PRs against it unless the owner explicitly asks.
+- Historical credit for earlier open-source browser work may remain in `README.md`; that does not imply an active fork relationship.
+- Base PRs on this repo's `main` (or the branch the user names).
 
 ### macOS-only Xcode app
 
