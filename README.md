@@ -63,4 +63,4 @@ Extensions are stored under `~/Library/Application Support/Zero/Extensions/`. Ev
 
 A minimal Firefox-compatible MV3 package lives at `Examples/ZeroSampleExtension`. The same demo is also bundled under `Browser/WebExtensions/Demo/hello-zero`.
 
-Credits to [LeonardoLarranaga/Browser](https://github.com/LeonardoLarranaga/Browser) for the open browser source <3
+Originally based on open browser work from [LeonardoLarranaga/Browser](https://github.com/LeonardoLarranaga/Browser); Zero is now a standalone project on its own path.
