@@ -21,9 +21,6 @@ final class BrowserSpace: Identifiable {
     var colorOpacity: Double
     var colorScheme: String
 
-    /// Persisted so relaunch can restore the last selected tab in this space.
-    var lastSelectedTabID: UUID?
-    
     @Relationship(deleteRule: .cascade, inverse: \BrowserTab.browserSpace) private var unorderedTabs: [BrowserTab]?
     @Relationship(deleteRule: .cascade) private var unorderedPinnedTabs: [BrowserTab]?
     
@@ -66,6 +63,10 @@ final class BrowserSpace: Identifiable {
     @Attribute(.ephemeral) var currentTab: BrowserTab? = nil
     @Transient var loadedTabs: [BrowserTab] = []
     @Attribute(.ephemeral) var isEditing: Bool = false
+
+    private var selectedTabDefaultsKey: String {
+        "zero.selectedTab.\(id.uuidString)"
+    }
     
     init(name: String, systemImage: String, order: Int, colors: [Color], grainOpacity: Double = 0.0, colorOpacity: Double = 1.0, colorScheme: String) {
         self.id = UUID()
@@ -114,18 +115,26 @@ final class BrowserSpace: Identifiable {
 
     func selectTab(_ tab: BrowserTab?) {
         currentTab = tab
-        lastSelectedTabID = tab?.id
+        // Persist outside SwiftData so we don't force a schema migration on existing stores.
+        if let tabID = tab?.id {
+            UserDefaults.standard.set(tabID.uuidString, forKey: selectedTabDefaultsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: selectedTabDefaultsKey)
+        }
     }
 
     /// Restore the last selected tab after relaunch / space switch.
     func restoreSelectedTab() {
         guard currentTab == nil else { return }
-        if let lastSelectedTabID,
-           let tab = allTabs.first(where: { $0.id == lastSelectedTabID }) {
+        if let saved = UserDefaults.standard.string(forKey: selectedTabDefaultsKey),
+           let tabID = UUID(uuidString: saved),
+           let tab = allTabs.first(where: { $0.id == tabID }) {
             currentTab = tab
         } else {
             currentTab = allTabs.first
-            lastSelectedTabID = currentTab?.id
+            if let tabID = currentTab?.id {
+                UserDefaults.standard.set(tabID.uuidString, forKey: selectedTabDefaultsKey)
+            }
         }
     }
     
