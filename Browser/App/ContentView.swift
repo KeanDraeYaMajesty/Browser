@@ -72,31 +72,55 @@ struct ContentView: View {
 }
 
 /// macOS 27 Golden Gate liquid glass: clearer refraction, stronger edge contrast, tunable tint.
+/// Tuned so wallpaper glass rivals Hyprland/KDE forceblur while chrome text stays crisp.
 private struct GoldenGateGlassBackground: View {
     let intensity: Double
 
     var body: some View {
         let tint = min(max(intensity, 0), 1)
+        let clearBias = 1 - tint
+
         Color.clear
             .glassEffect(in: .rect(cornerRadius: GoldenGateMetrics.windowCornerRadius))
             .overlay {
+                // Specular rim — bright top edge, soft depth at the bottom.
                 RoundedRectangle(cornerRadius: GoldenGateMetrics.windowCornerRadius, style: .continuous)
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                .white.opacity(0.34 + (0.18 * (1 - tint))),
-                                .white.opacity(0.08),
-                                .black.opacity(0.12 + (0.16 * tint))
+                                .white.opacity(0.42 + (0.22 * clearBias)),
+                                .white.opacity(0.10 + (0.06 * clearBias)),
+                                .black.opacity(0.10 + (0.18 * tint))
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 0.8
+                        lineWidth: 1.0
                     )
             }
             .overlay {
+                // Hairline inner highlight for depth without muddying the glass.
+                RoundedRectangle(cornerRadius: GoldenGateMetrics.windowCornerRadius - 0.5, style: .continuous)
+                    .strokeBorder(
+                        .white.opacity(0.10 + (0.12 * clearBias)),
+                        lineWidth: 0.5
+                    )
+                    .padding(0.75)
+                    .allowsHitTesting(false)
+            }
+            .overlay {
+                // Soft readability wash — stays airy at low tint, denser when dialed up.
                 RoundedRectangle(cornerRadius: GoldenGateMetrics.windowCornerRadius, style: .continuous)
-                    .fill(.background.opacity(0.08 + (0.22 * tint)))
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                .background.opacity(0.03 + (0.10 * tint)),
+                                .background.opacity(0.06 + (0.26 * tint))
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                     .allowsHitTesting(false)
             }
     }
@@ -107,7 +131,7 @@ enum GoldenGateMetrics {
     static let windowCornerRadius: CGFloat = 12
     static let contentCornerRadius: CGFloat = 12
     static let controlCornerRadius: CGFloat = 10
-    static let contentShadowRadius: CGFloat = 10
+    static let contentShadowRadius: CGFloat = 12
 }
 
 /// Keeps ExtensionManager's active model context / window wiring in sync with the SwiftUI hierarchy.

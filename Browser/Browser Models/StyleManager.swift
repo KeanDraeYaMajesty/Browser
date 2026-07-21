@@ -48,7 +48,7 @@ class StyleManager {
 
     /// Fetches remote styles from the hosted JSON
     func fetchRemoteStyles() {
-        print("� Fetching styles from remote URL: \(remoteStylesURL)")
+        print("🎨 Fetching styles from remote URL: \(remoteStylesURL)")
 
         guard let url = URL(string: remoteStylesURL) else {
             print("⚠️ Invalid remote URL")
@@ -234,6 +234,88 @@ class StyleManager {
             print("ℹ️ No style found for: \(host)")
             return nil
         }
+    }
+
+    /// Compose site transparency CSS with a tunable readability wash.
+    /// - Parameters:
+    ///   - url: Page URL used for site-specific styles.
+    ///   - readability: 0 = maximum see-through, 1 = strongest soft wash for crisp reading.
+    /// - Returns: Combined CSS, or `nil` when styles are disabled for the site.
+    func composedTransparencyCSS(for url: URL, readability: Double) -> String? {
+        guard let siteCSS = getStyle(for: url) else { return nil }
+        let overlay = readabilityOverlayCSS(intensity: readability)
+        if overlay.isEmpty {
+            return siteCSS
+        }
+        return siteCSS + "\n\n/* Zero readability overlay */\n" + overlay
+    }
+
+    /// Soft ambient wash + content plates so wallpaper glass stays visible while text stays sharp.
+    /// Tuned to beat typical Linux Transparent Zen defaults on contrast without muddying the glass.
+    func readabilityOverlayCSS(intensity: Double) -> String {
+        let clamped = min(max(intensity, 0), 1)
+        guard clamped > 0.02 else { return "" }
+
+        // Light/dark ambient veils sit *behind* page content (html::before).
+        let lightVeil = String(format: "%.3f", 0.04 + (0.22 * clamped))
+        let darkVeil = String(format: "%.3f", 0.06 + (0.28 * clamped))
+        // Content plates only kick in past a gentle threshold so clear glass stays clear.
+        let plateBoost = max(0, (clamped - 0.18) / 0.82)
+        let lightPlate = String(format: "%.3f", 0.10 + (0.38 * plateBoost))
+        let darkPlate = String(format: "%.3f", 0.14 + (0.42 * plateBoost))
+        // Hairline text edge for dense copy over busy wallpapers — barely there at low intensity.
+        let shadowAlpha = String(format: "%.3f", 0.08 + (0.22 * clamped))
+        let shadowBlur = String(format: "%.2f", 0.35 + (0.55 * clamped))
+
+        return """
+        html {
+          background-color: transparent !important;
+          background: transparent !important;
+        }
+        body {
+          background-color: transparent !important;
+          background: transparent !important;
+        }
+        html::before {
+          content: "" !important;
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: -1 !important;
+          pointer-events: none !important;
+          background: light-dark(
+            rgba(252, 252, 253, \(lightVeil)),
+            rgba(8, 10, 14, \(darkVeil))
+          ) !important;
+        }
+        article,
+        main,
+        [role="main"],
+        #content,
+        #main,
+        #main-content,
+        .content,
+        .post,
+        .post-content,
+        .entry-content,
+        .markdown-body,
+        .ProseMirror,
+        .cm-editor,
+        .reader-content,
+        .page-content,
+        .mw-body-content {
+          background-color: light-dark(
+            rgba(255, 255, 255, \(lightPlate)),
+            rgba(14, 16, 20, \(darkPlate))
+          ) !important;
+          background-image: none !important;
+        }
+        body, p, li, td, th, label, h1, h2, h3, h4, h5, h6 {
+          text-shadow: 0 0 \(shadowBlur)px light-dark(
+            rgba(255, 255, 255, \(shadowAlpha)),
+            rgba(0, 0, 0, \(shadowAlpha))
+          ) !important;
+        }
+        """
     }
 
     /// Extract base domain from a domain string (e.g., google.com -> google)

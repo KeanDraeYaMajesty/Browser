@@ -14,12 +14,23 @@ struct SidebarURL: View {
     @EnvironmentObject var userPreferences: UserPreferences
     
     @State var hover = false
+
+    private var glassTint: Double {
+        min(max(userPreferences.liquidGlassIntensity, 0), 1)
+    }
     
     var body: some View {
         HStack {
             if let currentTab = browserWindowState.currentSpace?.currentTab {
                 Text(currentTab.url.cleanHost)
                     .padding(.leading, 8)
+                    .fontWeight(.medium)
+                    .shadow(
+                        color: colorScheme == .dark
+                            ? .black.opacity(0.35 + (0.2 * glassTint))
+                            : .white.opacity(0.45 + (0.15 * (1 - glassTint))),
+                        radius: 0.6
+                    )
 
                 Spacer()
                 
@@ -38,17 +49,22 @@ struct SidebarURL: View {
         .glassEffect(in: .rect(cornerRadius: GoldenGateMetrics.controlCornerRadius))
         .overlay {
             RoundedRectangle(cornerRadius: GoldenGateMetrics.controlCornerRadius, style: .continuous)
+                .fill(.background.opacity(0.06 + (0.16 * glassTint)))
+                .allowsHitTesting(false)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: GoldenGateMetrics.controlCornerRadius, style: .continuous)
                 .strokeBorder(
                     LinearGradient(
                         colors: [
-                            .white.opacity(0.28),
-                            .white.opacity(0.06),
-                            .black.opacity(0.14)
+                            .white.opacity(0.34 + (0.16 * (1 - glassTint))),
+                            .white.opacity(0.08),
+                            .black.opacity(0.12 + (0.12 * glassTint))
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     ),
-                    lineWidth: 0.7
+                    lineWidth: 0.75
                 )
                 .allowsHitTesting(false)
         }

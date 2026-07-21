@@ -49,6 +49,7 @@ struct SettingsView: View {
 
 extension Notification.Name {
     static let openExtensionsSettings = Notification.Name("OpenExtensionsSettings")
+    static let transparencyPreferencesDidChange = Notification.Name("TransparencyPreferencesDidChange")
 }
 
 #Preview {

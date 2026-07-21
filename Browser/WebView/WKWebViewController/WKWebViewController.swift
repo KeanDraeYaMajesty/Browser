@@ -153,10 +153,13 @@ class WKWebViewController: NSViewController {
         guard let url = webView.url else { return }
 
         let js: String
-        // Check if styles are enabled for this specific website
-        if StyleManager.shared.areStylesEnabled(for: url),
-           let style = StyleManager.shared.getStyle(for: url) {
-            // Apply the style
+        // Global master switch + per-site enable, composed with readability wash.
+        if userPreferences.webContentTransparency,
+           StyleManager.shared.areStylesEnabled(for: url),
+           let style = StyleManager.shared.composedTransparencyCSS(
+            for: url,
+            readability: userPreferences.transparencyReadability
+           ) {
             let escapedCSS = style
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "`", with: "\\`")
@@ -174,7 +177,6 @@ class WKWebViewController: NSViewController {
             })();
             """
         } else {
-            // Remove the style if disabled or not available
             js = """
             (function() {
                 var style = document.getElementById('transparency-style');

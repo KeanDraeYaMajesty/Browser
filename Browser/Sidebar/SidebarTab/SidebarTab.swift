@@ -32,6 +32,11 @@ struct SidebarTab: View {
             Text(browserTab.title)
                 .lineLimit(1)
                 .truncationMode(.tail)
+                .fontWeight(browserSpace.currentTab == browserTab ? .medium : .regular)
+                .shadow(
+                    color: colorScheme == .dark ? .black.opacity(0.28) : .white.opacity(0.35),
+                    radius: 0.5
+                )
 
             Spacer()
 
@@ -39,12 +44,21 @@ struct SidebarTab: View {
                 closeTabButton
             }
         }
-                .opacity(getTabOpacity())
+        .opacity(getTabOpacity())
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 30)
         .padding(3)
-        .background(dragging ? .white.opacity(0.1) : browserSpace.currentTab == browserTab ? browserSpace.textColor(in: colorScheme) == .black ? .white : .white.opacity(0.2) : isHoveringTab ? .white.opacity(0.1) : .clear)
+        .background {
+            tabBackground
+        }
         .clipShape(.rect(cornerRadius: 10))
+        .overlay {
+            if browserSpace.currentTab == browserTab {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(.white.opacity(colorScheme == .dark ? 0.14 : 0.28), lineWidth: 0.6)
+                    .allowsHitTesting(false)
+            }
+        }
         .onTapGesture(perform: selectTab)
         .onMiddleClick {
             closeTab()
@@ -102,6 +116,29 @@ struct SidebarTab: View {
             return 0.7
         }
         return 1.0
+    }
+
+    @ViewBuilder
+    private var tabBackground: some View {
+        if dragging {
+            Color.white.opacity(0.12)
+        } else if browserSpace.currentTab == browserTab {
+            // Frosted plate keeps the active tab readable over Liquid Glass / wallpaper.
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(
+                            browserSpace.textColor(in: colorScheme) == .black
+                                ? Color.white.opacity(0.22)
+                                : Color.white.opacity(0.12)
+                        )
+                }
+        } else if isHoveringTab {
+            Color.white.opacity(0.10)
+        } else {
+            Color.clear
+        }
     }
 
     func selectTab() {
