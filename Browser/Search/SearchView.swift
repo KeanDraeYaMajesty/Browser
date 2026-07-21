@@ -6,11 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// View that displays the search view with a text field and search suggestion results
 struct SearchView: View {
     
-    @Environment(\.modelContext) var modelContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) var colorScheme
     @Environment(BrowserWindowState.self) var browserWindowState
     

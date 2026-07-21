@@ -45,7 +45,7 @@ final class ExtensionManager: NSObject, ObservableObject {
     func start() {
         guard controller == nil else { return }
 
-        let configuration = WKWebExtensionController.Configuration.defaultConfiguration()
+        let configuration = WKWebExtensionController.Configuration.default()
         let controller = WKWebExtensionController(configuration: configuration)
         controller.delegate = self
         self.controller = controller
@@ -228,7 +228,11 @@ final class ExtensionManager: NSObject, ObservableObject {
                 presentErrorAlert(error)
             }
         } else if let context = contexts[id] {
-            try? controller?.unload(context)
+            do {
+                try await controller?.unload(context)
+            } catch {
+                print("🧩 Failed to unload extension \(id): \(error)")
+            }
             contexts.removeValue(forKey: id)
         }
 
@@ -241,7 +245,11 @@ final class ExtensionManager: NSObject, ObservableObject {
 
     func uninstallExtension(id: String, persist: Bool = true) async {
         if let context = contexts[id] {
-            try? controller?.unload(context)
+            do {
+                try await controller?.unload(context)
+            } catch {
+                print("🧩 Failed to unload extension \(id): \(error)")
+            }
             contexts.removeValue(forKey: id)
         }
 
@@ -315,9 +323,9 @@ final class ExtensionManager: NSObject, ObservableObject {
                 throw ExtensionManagerError.loadFailed("Web extension controller is not ready.")
             }
             if let existing = contexts[extensionID] {
-                try? controller.unload(existing)
+                try await controller.unload(existing)
             }
-            try controller.load(context)
+            try await controller.load(context)
             contexts[extensionID] = context
             context.loadBackgroundContent { error in
                 if let error {
@@ -487,9 +495,9 @@ final class ExtensionManager: NSObject, ObservableObject {
 
     // MARK: - Actions / Toolbar
 
-    func toolbarActions(for tab: BrowserTab?) -> [(extensionID: String, extensionName: String, action: WKWebExtensionAction)] {
+    func toolbarActions(for tab: BrowserTab?) -> [(extensionID: String, extensionName: String, action: WKWebExtension.Action)] {
         let adapter = tab.map { tabAdapter(for: $0) }
-        var result: [(String, String, WKWebExtensionAction)] = []
+        var result: [(String, String, WKWebExtension.Action)] = []
 
         for item in installedExtensions where item.isEnabled {
             guard let context = contexts[item.id],
@@ -670,7 +678,7 @@ extension ExtensionManager: WKWebExtensionControllerDelegate {
 
     func webExtensionController(
         _ controller: WKWebExtensionController,
-        didUpdate action: WKWebExtensionAction,
+        didUpdate action: WKWebExtension.Action,
         forExtensionContext context: WKWebExtensionContext
     ) {
         actionsRevision &+= 1
@@ -678,7 +686,7 @@ extension ExtensionManager: WKWebExtensionControllerDelegate {
 
     func webExtensionController(
         _ controller: WKWebExtensionController,
-        presentActionPopup action: WKWebExtensionAction,
+        presentActionPopup action: WKWebExtension.Action,
         for extensionContext: WKWebExtensionContext,
         completionHandler: @escaping ((any Error)?) -> Void
     ) {
