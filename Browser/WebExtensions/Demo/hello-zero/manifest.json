@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Hello Zero",
+  "version": "1.0.0",
+  "description": "Firefox-compatible sample extension for Zero — badges pages and proves WKWebExtension content scripts work.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hello-zero@zero.browser",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_title": "Hello Zero",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

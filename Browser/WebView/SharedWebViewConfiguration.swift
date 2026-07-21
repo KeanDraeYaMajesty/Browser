@@ -7,13 +7,19 @@
 
 import WebKit
 
-/// Shared configuration for WKWebView instances
+/// Shared base configuration for WKWebView instances.
+///
+/// Tab configurations **must** be derived via ``makeConfiguration(noTrace:)`` (a copy of this
+/// base) so they share the same process pool and `webExtensionController`. Creating a fresh
+/// `WKWebViewConfiguration()` and only assigning the controller breaks extension content scripts.
 class SharedWebViewConfiguration {
-    // Singleton to ensure a single shared configuration across tabs
     static let shared = SharedWebViewConfiguration()
 
-    // Shared configuration with cache, cookies, and other settings
+    /// Base configuration that owns the shared process pool and extension controller attachment point.
     let configuration: WKWebViewConfiguration
+
+    private var contentRuleList: WKContentRuleList?
+    private var cachedUserAgent: String?
 
     private init() {
         configuration = WKWebViewConfiguration()
@@ -21,30 +27,73 @@ class SharedWebViewConfiguration {
         configuration.allowsAirPlayForMediaPlayback = true
         configuration.websiteDataStore = .default()
         configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.upgradeKnownHostsToHTTPS = true
+        configuration.applicationNameForUserAgent = "Zero"
 
-        // Configure content blockers
-        do {
-            if let adawayURL = Bundle.main.url(forResource: "adaway", withExtension: "json") {
-                let contentBlockers = try String(contentsOf: adawayURL, encoding: .utf8)
-                WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "BrowserContentBlockers", encodedContentRuleList: contentBlockers) { list, error in
-                    if let error {
-                        print("🚫 Error compiling content blockers:", error)
-                    } else if let list {
-                         self.configuration.userContentController.add(list)
-                    }
-                }
-            }
-        } catch {
-            print("🚫 Error loading content blockers:", error)
-        }
-
-        // Configure shared preferences
-    let preferences = WKPreferences()
-    preferences.isElementFullscreenEnabled = true
-    configuration.preferences = preferences
+        let preferences = WKPreferences()
+        preferences.isElementFullscreenEnabled = true
+        preferences.isTextInteractionEnabled = true
+        configuration.preferences = preferences
 
         let webPagePreferences = WKWebpagePreferences()
         webPagePreferences.allowsContentJavaScript = true
         configuration.defaultWebpagePreferences = webPagePreferences
+
+        compileContentBlockers()
+    }
+
+    /// User agent string from the system WebKit build, with the app name appended.
+    var userAgent: String {
+        if let cachedUserAgent, !cachedUserAgent.isEmpty {
+            return cachedUserAgent
+        }
+        let webView = WKWebView(frame: .zero, configuration: configuration.copy() as! WKWebViewConfiguration)
+        let value = webView.value(forKey: "userAgent") as? String ?? ""
+        cachedUserAgent = value
+        return value
+    }
+
+    /// Attach the shared web extension controller so every derived tab config inherits it.
+    func attachWebExtensionController(_ controller: WKWebExtensionController) {
+        configuration.webExtensionController = controller
+    }
+
+    /// Creates a per-tab configuration derived from the shared base.
+    /// - Parameter noTrace: When true, uses a non-persistent data store (No-Trace / Temporary windows).
+    func makeConfiguration(noTrace: Bool = false) -> WKWebViewConfiguration {
+        let config = configuration.copy() as! WKWebViewConfiguration
+
+        if let contentRuleList {
+            config.userContentController.removeAllContentRuleLists()
+            config.userContentController.add(contentRuleList)
+        }
+
+        if noTrace {
+            config.websiteDataStore = .nonPersistent()
+        }
+
+        return config
+    }
+
+    private func compileContentBlockers() {
+        do {
+            guard let adawayURL = Bundle.main.url(forResource: "adaway", withExtension: "json") else { return }
+            let contentBlockers = try String(contentsOf: adawayURL, encoding: .utf8)
+            WKContentRuleListStore.default().compileContentRuleList(
+                forIdentifier: "BrowserContentBlockers",
+                encodedContentRuleList: contentBlockers
+            ) { [weak self] list, error in
+                if let error {
+                    print("🚫 Error compiling content blockers:", error)
+                    return
+                }
+                guard let self, let list else { return }
+                self.contentRuleList = list
+                self.configuration.userContentController.removeAllContentRuleLists()
+                self.configuration.userContentController.add(list)
+            }
+        } catch {
+            print("🚫 Error loading content blockers:", error)
+        }
     }
 }

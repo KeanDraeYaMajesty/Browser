@@ -85,6 +85,7 @@ extension WKWebViewControllerRepresentable {
         /// Observes the webview to update the tab's properties, such as the title, favicon, url, and navigation buttons...
         func observeWebView(_ webview: MyWKWebView) {
             self.parent.tab.webview = webview
+            ExtensionManager.shared.notifyTabOpened(self.parent.tab)
                         
             webview.publisher(for: \.canGoBack)
                 .receive(on: DispatchQueue.main)
@@ -103,19 +104,22 @@ extension WKWebViewControllerRepresentable {
             webview.publisher(for: \.url)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] url in
-                    guard let url else { return }
-                    self?.parent.tab.url = url
+                    guard let self, let url else { return }
+                    self.parent.tab.url = url
+                    ExtensionManager.shared.notifyTabPropertiesChanged(self.parent.tab, properties: .url)
                 }
                 .store(in: &cancellables)
             
             webview.publisher(for: \.title)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] title in
+                    guard let self else { return }
                     if let title, !title.isEmpty {
-                        self?.parent.tab.title = title
+                        self.parent.tab.title = title
                     } else {
-                        self?.parent.tab.title = self?.parent.tab.url.cleanHost ?? ""
+                        self.parent.tab.title = self.parent.tab.url.cleanHost
                     }
+                    ExtensionManager.shared.notifyTabPropertiesChanged(self.parent.tab, properties: .title)
                 }
                 .store(in: &cancellables)
             
@@ -128,7 +132,9 @@ extension WKWebViewControllerRepresentable {
             webview.publisher(for: \.isLoading)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] isLoading in
-                    self?.parent.tab.isLoading = isLoading
+                    guard let self else { return }
+                    self.parent.tab.isLoading = isLoading
+                    ExtensionManager.shared.notifyTabPropertiesChanged(self.parent.tab, properties: .loading)
                 }
                 .store(in: &cancellables)
         }
@@ -136,6 +142,7 @@ extension WKWebViewControllerRepresentable {
         func stopObservingWebView() {
             cancellables.forEach { $0.cancel() }
             cancellables.removeAll()
+            ExtensionManager.shared.notifyTabClosed(self.parent.tab)
         }
         
         func setHoverURL(to url: String) {

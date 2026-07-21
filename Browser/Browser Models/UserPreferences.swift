@@ -18,7 +18,13 @@ class UserPreferences: ObservableObject {
     // App appearance preferences
     @AppStorage("disable_animations") var disableAnimations = false
     
-    @AppStorage("window_background_style") var windowBackgroundStyle = WindowBackgroundStyle.thinMaterial
+    @AppStorage("window_background_style") var windowBackgroundStyle = WindowBackgroundStyle.liquidGlass
+
+    /// 0 = clearer Liquid Glass, 1 = more tinted / readable (macOS 27 Golden Gate).
+    @AppStorage("liquid_glass_intensity") var liquidGlassIntensity = 0.45
+
+    /// Flush sidebar to the window edge (Golden Gate default).
+    @AppStorage("edge_to_edge_sidebar") var edgeToEdgeSidebar = true
     
     enum LoadingIndicatorPosition: Int {
         case onURL
@@ -74,7 +80,9 @@ class UserPreferences: ObservableObject {
     func registerAllDefaults() {
         UserDefaults.standard.register(defaults: [
             "disable_animations": false,
-            "window_background_style": WindowBackgroundStyle.thinMaterial.rawValue,
+            "window_background_style": WindowBackgroundStyle.liquidGlass.rawValue,
+            "liquid_glass_intensity": 0.45,
+            "edge_to_edge_sidebar": true,
             "warn_before_quitting": true,
             "rounded_corners": true,
             "clear_selected_tab": false,

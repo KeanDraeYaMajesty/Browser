@@ -33,6 +33,7 @@ struct MainFrame: View {
         } detail: {
             pageView
         }
+        .navigationSplitViewStyle(.balanced)
         .animation(.easeInOut(duration: 0.3), value: splitState.columnVisibility)
 
         .onChange(of: splitState.columnVisibility) { oldValue, newValue in
@@ -66,8 +67,7 @@ struct MainFrame: View {
         .overlay {
             if browserWindowState.showTabSwitcher {
                 ZStack {
-                    // Optional dim background
-                    Color.black.opacity(0.001) // invisible, used to detect outside tap
+                    Color.black.opacity(0.001)
                         .ignoresSafeArea()
                         .onTapGesture {
                             browserWindowState.showTabSwitcher = false
@@ -78,8 +78,8 @@ struct MainFrame: View {
                             .environment(browserWindowState)
                             .frame(width: 700, height: 200)
                             .background(.ultraThinMaterial)
-                            .cornerRadius(16)
-                            .shadow(radius: 20)
+                            .clipShape(.rect(cornerRadius: GoldenGateMetrics.windowCornerRadius))
+                            .shadow(color: .black.opacity(0.28), radius: 24, y: 10)
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
@@ -104,11 +104,13 @@ struct MainFrame: View {
     }
 
     // MARK: - Sidebar
+    /// Golden Gate edge-to-edge sidebar: flush to the window edge instead of a floating inset sheet.
     @ViewBuilder
     private var sidebarView: some View {
         Sidebar(browserSpaces: browserSpaces)
-            .padding(8)
-            .padding(.top, 24)
+            .padding(.horizontal, userPreferences.edgeToEdgeSidebar ? 2 : 8)
+            .padding(.top, userPreferences.edgeToEdgeSidebar ? 10 : 24)
+            .padding(.bottom, userPreferences.edgeToEdgeSidebar ? 6 : 0)
             .ignoresSafeArea(.all)
             .modifier(ConditionalToolbarRemover(shouldRemove: splitState.columnVisibility == .detailOnly))
     }
@@ -117,8 +119,8 @@ struct MainFrame: View {
     @ViewBuilder
     private var pageView: some View {
         PageWebView(browserSpaces: browserSpaces)
-            .clipShape(.rect(cornerRadius: cornerRadius))
-            .shadow(radius: shadowRadius)
+            .clipShape(.rect(cornerRadius: cornerRadius, style: .continuous))
+            .shadow(color: .black.opacity(isImmersive ? 0 : 0.22), radius: shadowRadius, y: isImmersive ? 0 : 4)
             .ignoresSafeArea(edges: userPreferences.extendedSidebarStyle ? .all : [.top, .bottom, .trailing])
             .animation(.easeInOut(duration: 0.3), value: userPreferences.extendedSidebarStyle)
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.willEnterFullScreenNotification)) { _ in
@@ -136,11 +138,11 @@ struct MainFrame: View {
 
     // MARK: - Computed properties
     private var cornerRadius: CGFloat {
-        isImmersive ? 0 : (userPreferences.roundedCorners ? 8 : 0)
+        isImmersive ? 0 : (userPreferences.roundedCorners ? GoldenGateMetrics.contentCornerRadius : 0)
     }
 
     private var shadowRadius: CGFloat {
-        isImmersive ? 0 : 3
+        isImmersive ? 0 : GoldenGateMetrics.contentShadowRadius
     }
 
 }
@@ -175,6 +177,8 @@ struct ConditionalToolbarRemover: ViewModifier {
                         Label("Reload", systemImage: "arrow.trianglehead.clockwise")
                     }
                     .help("Reload")
+
+                    ExtensionToolbarButtons()
                 }
             }
         }

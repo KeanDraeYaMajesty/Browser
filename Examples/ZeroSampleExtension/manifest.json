@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Zero Sample Extension",
+  "version": "1.0.0",
+  "description": "Minimal Firefox/Chrome MV3 package for verifying WKWebExtension support in Zero.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "zero-sample@zero.browser",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_title": "Zero Sample",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

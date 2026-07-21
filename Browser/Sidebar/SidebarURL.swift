@@ -35,7 +35,23 @@ struct SidebarURL: View {
         .frame(height: 40)
         .contentShape(Rectangle())
         .background(.clear)
-        .glassEffect(in: .rect(cornerRadius: 16.0))
+        .glassEffect(in: .rect(cornerRadius: GoldenGateMetrics.controlCornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: GoldenGateMetrics.controlCornerRadius, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.28),
+                            .white.opacity(0.06),
+                            .black.opacity(0.14)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.7
+                )
+                .allowsHitTesting(false)
+        }
         .overlay(alignment: .bottom) {
             if userPreferences.loadingIndicatorPosition == .onURL && browserWindowState.currentSpace?.currentTab?.isLoading == true {
                 ProgressView(value: browserWindowState.currentSpace?.currentTab?.estimatedProgress ?? 0)
@@ -44,7 +60,7 @@ struct SidebarURL: View {
                     .tint(browserWindowState.currentSpace?.getColors.first ?? .accentColor)
             }
         }
-        .clipShape(.rect(cornerRadius: 10))
+        .clipShape(.rect(cornerRadius: GoldenGateMetrics.controlCornerRadius, style: .continuous))
         .onTapGesture {
             browserWindowState.searchOpenLocation = .fromURLBar
         }

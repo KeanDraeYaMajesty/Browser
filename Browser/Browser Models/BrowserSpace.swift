@@ -158,6 +158,7 @@ final class BrowserSpace: Identifiable {
             do {
                 tab.isClosed = true
                 tab.closedAt = .now
+                ExtensionManager.shared.notifyTabClosed(tab)
                 
                 // Purge old closed tabs if there are too many (keep last 50)
                 let closed = recentlyClosedTabs
