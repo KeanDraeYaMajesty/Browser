@@ -48,7 +48,7 @@ class StyleManager {
 
     /// Fetches remote styles from the hosted JSON
     func fetchRemoteStyles() {
-        print("� Fetching styles from remote URL: \(remoteStylesURL)")
+        print("🎨 Fetching styles from remote URL: \(remoteStylesURL)")
 
         guard let url = URL(string: remoteStylesURL) else {
             print("⚠️ Invalid remote URL")

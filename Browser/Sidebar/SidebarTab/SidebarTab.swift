@@ -44,7 +44,7 @@ struct SidebarTab: View {
                 closeTabButton
             }
         }
-                .opacity(getTabOpacity())
+        .opacity(getTabOpacity())
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 30)
         .padding(3)
