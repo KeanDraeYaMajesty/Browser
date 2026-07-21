@@ -11,8 +11,9 @@ import SwiftData
 import WebKit
 
 extension WKWebViewControllerRepresentable {
-    /// Coordinator class to handle view controller events between SwiftUI and WebKit
-    class Coordinator: NSObject {
+    /// Coordinator class to handle view controller events between SwiftUI and WebKit.
+    @MainActor
+    final class Coordinator: NSObject {
         var parent: WKWebViewControllerRepresentable
         
         private var cancellables = Set<AnyCancellable>()
@@ -95,53 +96,77 @@ extension WKWebViewControllerRepresentable {
             webview.publisher(for: \.canGoBack)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] canGoBack in
-                    self?.parent.tab.canGoBack = canGoBack
+                    Task { @MainActor in
+                        self?.parent.tab.canGoBack = canGoBack
+                    }
                 }
                 .store(in: &cancellables)
             
             webview.publisher(for: \.canGoForward)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] canGoForward in
-                    self?.parent.tab.canGoForward = canGoForward
+                    Task { @MainActor in
+                        self?.parent.tab.canGoForward = canGoForward
+                    }
                 }
                 .store(in: &cancellables)
             
             webview.publisher(for: \.url)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] url in
-                    guard let self, let url else { return }
-                    self.parent.tab.url = url
-                    ExtensionManager.shared.notifyTabPropertiesChanged(self.parent.tab, properties: .url)
+                    guard let url else { return }
+                    Task { @MainActor in
+                        self?.handleURLChange(url)
+                    }
                 }
                 .store(in: &cancellables)
             
             webview.publisher(for: \.title)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] title in
-                    guard let self else { return }
-                    if let title, !title.isEmpty {
-                        self.parent.tab.title = title
-                    } else {
-                        self.parent.tab.title = self.parent.tab.url.cleanHost
+                    Task { @MainActor in
+                        self?.handleTitleChange(title)
                     }
-                    ExtensionManager.shared.notifyTabPropertiesChanged(self.parent.tab, properties: .title)
                 }
                 .store(in: &cancellables)
             
             webview.publisher(for: \.estimatedProgress)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] estimatedProgress in
-                    self?.parent.tab.estimatedProgress = estimatedProgress
+                    Task { @MainActor in
+                        self?.parent.tab.estimatedProgress = estimatedProgress
+                    }
                 }
                 .store(in: &cancellables)
+
             webview.publisher(for: \.isLoading)
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] isLoading in
-                    guard let self else { return }
-                    self.parent.tab.isLoading = isLoading
-                    ExtensionManager.shared.notifyTabPropertiesChanged(self.parent.tab, properties: .loading)
+                    Task { @MainActor in
+                        self?.handleLoadingChange(isLoading)
+                    }
                 }
                 .store(in: &cancellables)
+        }
+
+        private func handleURLChange(_ url: URL) {
+            parent.tab.url = url
+            // SDK spells this OptionSet case as `.URL` (capitalized).
+            ExtensionManager.shared.notifyTabPropertiesChanged(parent.tab, properties: .URL)
+        }
+
+        private func handleTitleChange(_ title: String?) {
+            if let title, !title.isEmpty {
+                parent.tab.title = title
+            } else {
+                parent.tab.title = parent.tab.url.cleanHost
+            }
+            ExtensionManager.shared.notifyTabPropertiesChanged(parent.tab, properties: .title)
+        }
+
+        private func handleLoadingChange(_ isLoading: Bool) {
+            parent.tab.isLoading = isLoading
+            ExtensionManager.shared.notifyTabPropertiesChanged(parent.tab, properties: .loading)
         }
         
         func stopObservingWebView(notifyClosed: Bool = false) {
