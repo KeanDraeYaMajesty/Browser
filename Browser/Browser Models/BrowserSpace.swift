@@ -242,6 +242,7 @@ final class BrowserSpace: Identifiable {
         }
     }
     
+    @MainActor
     func clear(using modelContext: ModelContext) {
         let deletedTabs = tabs.filter {
             UserDefaults.standard.bool(forKey: "clear_selected_tab") ? true : $0 != currentTab
