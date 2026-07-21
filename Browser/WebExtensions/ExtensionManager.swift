@@ -478,7 +478,9 @@ final class ExtensionManager: NSObject, ObservableObject {
     func notifyTabPropertiesChanged(_ tab: BrowserTab, properties: WKWebExtension.TabChangedProperties) {
         let adapter = tabAdapter(for: tab)
         controller?.didChangeTabProperties(properties, for: adapter)
-        if properties.contains(.url) || properties.contains(.title) || properties.contains(.loading) {
+        // Refresh toolbar badges/icons when URL, title, or loading state changes.
+        // SDK spells the URL flag as `.URL` (not `.url`).
+        if properties.contains(.URL) || properties.contains(.title) || properties.contains(.loading) {
             actionsRevision &+= 1
         }
     }
