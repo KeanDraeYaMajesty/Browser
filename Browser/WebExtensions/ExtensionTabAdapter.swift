@@ -83,7 +83,7 @@ final class ExtensionTabAdapter: NSObject, WKWebExtensionTab {
         completionHandler(nil)
     }
 
-    func reload(fromOrigin fromOrigin: Bool, for extensionContext: WKWebExtensionContext, completionHandler: @escaping (Error?) -> Void) {
+    func reload(fromOrigin: Bool, for extensionContext: WKWebExtensionContext, completionHandler: @escaping (Error?) -> Void) {
         if fromOrigin {
             tab.webview?.reloadFromOrigin()
         } else {

@@ -6,12 +6,13 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// Context menu for a history entry row. Contains actions to open the history entry in a new tab, in a new window, or to delete it.
 
 struct HistoryEntryRowContextMenu: ViewModifier {
     
-    @Environment(\.modelContext) var modelContext
+    @Environment(\.modelContext) private var modelContext
     
     let entry: BrowserHistoryEntry
     let browserTab: BrowserTab
