@@ -12,6 +12,7 @@ struct SidebarBottomToolbar: View {
     
     @Environment(\.modelContext) var modelContext
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.openSettings) private var openSettings
     @Environment(SidebarModel.self) var sidebarModel
     @Environment(BrowserWindowState.self) var browserWindowState
     
@@ -68,6 +69,16 @@ struct SidebarBottomToolbar: View {
                     }
                     .allowsHitTesting(false)
             }
+
+            Button("Extensions", systemImage: "puzzlepiece.extension") {
+                UserDefaults.standard.set(true, forKey: "open_extensions_settings_once")
+                openSettings()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    NotificationCenter.default.post(name: .openExtensionsSettings, object: nil)
+                }
+            }
+            .help("Manage Firefox extensions")
+            .buttonStyle(.sidebarHover(padding: 2, enabledColor: foregroundColor))
             
             Spacer()
             
