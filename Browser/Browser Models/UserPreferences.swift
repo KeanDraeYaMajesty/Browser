@@ -20,8 +20,8 @@ class UserPreferences: ObservableObject {
     
     @AppStorage("window_background_style") var windowBackgroundStyle = WindowBackgroundStyle.liquidGlass
 
-    /// 0 = clearer Liquid Glass, 1 = more tinted / readable (macOS 27 Golden Gate).
-    @AppStorage("liquid_glass_intensity") var liquidGlassIntensity = 0.45
+    /// 0 = clearer Liquid Glass (Hyprland-class see-through), 1 = more tinted / readable (macOS 27 Golden Gate).
+    @AppStorage("liquid_glass_intensity") var liquidGlassIntensity = 0.36
 
     /// Flush sidebar to the window edge (Golden Gate default).
     @AppStorage("edge_to_edge_sidebar") var edgeToEdgeSidebar = true
@@ -35,7 +35,12 @@ class UserPreferences: ObservableObject {
     
     // Web appearance preferences
     @AppStorage("rounded_corners") var roundedCorners = true
+
+    /// Master switch for website transparency (Transparent Zen / Zen Internet style).
     @AppStorage("web_content_transparency") var webContentTransparency = false
+
+    /// 0 = max wallpaper see-through, 1 = strongest soft wash for crisp reading over glass.
+    @AppStorage("transparency_readability") var transparencyReadability = 0.42
     
     // General preferences
     @AppStorage("clear_selected_tab") var clearSelectedTab = false
@@ -81,7 +86,7 @@ class UserPreferences: ObservableObject {
         UserDefaults.standard.register(defaults: [
             "disable_animations": false,
             "window_background_style": WindowBackgroundStyle.liquidGlass.rawValue,
-            "liquid_glass_intensity": 0.45,
+            "liquid_glass_intensity": 0.36,
             "edge_to_edge_sidebar": true,
             "warn_before_quitting": true,
             "rounded_corners": true,
@@ -91,6 +96,7 @@ class UserPreferences: ObservableObject {
             "automatic_page_suspension": true,
             "show_hover_url": true,
             "web_content_transparency": false,
+            "transparency_readability": 0.42,
             "extended_sidebar_style": false
         ])
     }

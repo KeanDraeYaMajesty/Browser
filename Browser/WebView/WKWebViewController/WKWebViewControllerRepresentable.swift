@@ -36,6 +36,8 @@ struct WKWebViewControllerRepresentable: NSViewControllerRepresentable {
     }
 
     func updateNSViewController(_ nsViewController: WKWebViewController, context: Context) {
+        nsViewController.userPreferences = userPreferences
+
         let wasHidden = nsViewController.webView.isHidden
         nsViewController.webView.isHidden = tab != browserSpace.currentTab
                                             || tab.webviewErrorDescription != nil

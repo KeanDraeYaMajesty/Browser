@@ -35,10 +35,13 @@ extension WKWebViewController: WKNavigationDelegate {
         self.tab.webviewErrorCode = nil
         self.tab.webviewErrorDescription = nil
         
-        // Inject CSS if styles are enabled for this website
-        if StyleManager.shared.areStylesEnabled(for: url),
-           let style = StyleManager.shared.getStyle(for: url) {
-            // Properly escape the CSS content for JavaScript
+        // Inject transparency CSS when the global master switch and per-site styles allow it.
+        if userPreferences.webContentTransparency,
+           StyleManager.shared.areStylesEnabled(for: url),
+           let style = StyleManager.shared.composedTransparencyCSS(
+            for: url,
+            readability: userPreferences.transparencyReadability
+           ) {
             let escapedCSS = style
                 .replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "`", with: "\\`")
@@ -53,6 +56,14 @@ extension WKWebViewController: WKNavigationDelegate {
                     document.head.appendChild(style);
                 }
                 style.textContent = `\(escapedCSS)`;
+            })();
+            """
+            webView.evaluateJavaScript(js, completionHandler: nil)
+        } else {
+            let js = """
+            (function() {
+                var style = document.getElementById('transparency-style');
+                if (style) { style.remove(); }
             })();
             """
             webView.evaluateJavaScript(js, completionHandler: nil)

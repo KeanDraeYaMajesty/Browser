@@ -64,5 +64,12 @@ struct PageWebView: View {
                 browserWindowState.currentSpace?.currentTab?.webview?.togglePictureInPicture()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .transparencyPreferencesDidChange)) { _ in
+            for space in browserSpaces {
+                for tab in space.loadedTabs {
+                    tab.viewController?.applyTransparency()
+                }
+            }
+        }
     }
 }

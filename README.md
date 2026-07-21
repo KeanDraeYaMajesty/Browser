@@ -31,6 +31,7 @@ https://github.com/user-attachments/assets/90738982-651a-4991-8580-866325d1d128
 - [x] Picture-in-Picutre
 - [x] Built in custom website themes and transparency
 - [x] Liquid Glass tuned for **macOS 27 Golden Gate** (edge-to-edge sidebar, uniform corners, deeper shadows, glass intensity)
+- [x] **Website transparency + readability** — Transparent Zen-class page glass with a tunable wash so wallpaper shows through without killing contrast (Linux users, envy away)
 - [x] Middle click
 - [x] Smooth tab switching and UI animations
 - [x] Focus mode with 0 visible UI for an immersive browsing experience

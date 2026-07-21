@@ -123,7 +123,7 @@ struct MainFrame: View {
     private var pageView: some View {
         PageWebView(browserSpaces: browserSpaces)
             .clipShape(.rect(cornerRadius: cornerRadius, style: .continuous))
-            .shadow(color: .black.opacity(isImmersive ? 0 : 0.22), radius: shadowRadius, y: isImmersive ? 0 : 4)
+            .shadow(color: .black.opacity(isImmersive ? 0 : 0.26), radius: shadowRadius, y: isImmersive ? 0 : 5)
             .ignoresSafeArea(edges: userPreferences.extendedSidebarStyle ? .all : [.top, .bottom, .trailing])
             .animation(.easeInOut(duration: 0.3), value: userPreferences.extendedSidebarStyle)
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.willEnterFullScreenNotification)) { _ in
