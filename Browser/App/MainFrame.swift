@@ -30,8 +30,10 @@ struct MainFrame: View {
 
         NavigationSplitView(columnVisibility: $splitState.columnVisibility) {
             sidebarView
+                .environment(browserWindowState)
         } detail: {
             pageView
+                .environment(browserWindowState)
         }
         .navigationSplitViewStyle(.balanced)
         .animation(.easeInOut(duration: 0.3), value: splitState.columnVisibility)
@@ -88,6 +90,7 @@ struct MainFrame: View {
             }
         }
 
+        .environment(browserWindowState)
         .environment(sidebarModel)
         .focusedSceneValue(\.sidebarModel, sidebarModel)
         .environmentObject(splitState)
@@ -178,7 +181,9 @@ struct ConditionalToolbarRemover: ViewModifier {
                     }
                     .help("Reload")
 
+                    // Toolbars often lose @Environment on macOS — re-inject explicitly.
                     ExtensionToolbarButtons()
+                        .environment(browserWindowState)
                 }
             }
         }

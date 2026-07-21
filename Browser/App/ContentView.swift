@@ -9,35 +9,24 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @State var browserWindowState: BrowserWindowState
+    @State private var browserWindowState: BrowserWindowState
     @EnvironmentObject var userPreferences: UserPreferences
 
     init(windowID: String = "BrowserWindow") {
         _browserWindowState = State(initialValue: BrowserWindowState(windowID: windowID))
     }
 
-    @ViewBuilder
-    private var mainFrameWithBackground: some View {
-        switch userPreferences.windowBackgroundStyle {
-        case .liquidGlass:
-            MainFrame()
-                .background {
-                    GoldenGateGlassBackground(intensity: userPreferences.liquidGlassIntensity)
-                }
-        case .thinMaterial:
-            MainFrame()
-                .background(.thinMaterial)
-        }
-    }
-
     var body: some View {
-        mainFrameWithBackground
+        // Inject BrowserWindowState as early as possible so NavigationSplitView
+        // columns, toolbars, and backgrounds all see it on first layout.
+        rootContent
+            .environment(browserWindowState)
             .ignoresSafeArea(.all)
             .focusedSceneValue(\.browserActiveWindowState, browserWindowState)
-            .environment(browserWindowState)
             .sheet(isPresented: $browserWindowState.showURLQRCode) {
                 if let currentTab = browserWindowState.currentSpace?.currentTab {
                     URLQRCodeView(browserTab: currentTab)
+                        .environment(browserWindowState)
                 }
             }
             .popover(
@@ -62,7 +51,23 @@ struct ContentView: View {
             .onDisappear {
                 ExtensionManager.shared.unregisterWindow(state: browserWindowState)
             }
-            .background(ExtensionWindowBridge())
+            .background {
+                ExtensionWindowBridge(browserWindowState: browserWindowState)
+            }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        switch userPreferences.windowBackgroundStyle {
+        case .liquidGlass:
+            MainFrame()
+                .background {
+                    GoldenGateGlassBackground(intensity: userPreferences.liquidGlassIntensity)
+                }
+        case .thinMaterial:
+            MainFrame()
+                .background(.thinMaterial)
+        }
     }
 }
 
@@ -108,7 +113,7 @@ enum GoldenGateMetrics {
 /// Keeps ExtensionManager's active model context / window wiring in sync with the SwiftUI hierarchy.
 private struct ExtensionWindowBridge: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(BrowserWindowState.self) private var browserWindowState
+    let browserWindowState: BrowserWindowState
     @State private var previousTabID: UUID?
 
     var body: some View {
