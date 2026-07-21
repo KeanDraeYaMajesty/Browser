@@ -165,6 +165,7 @@ import SwiftData
     }
 
     /// Reopen the most recently closed tab in the current space (Cmd+Shift+T).
+    @MainActor
     @discardableResult
     func reopenLastClosedTab(using modelContext: ModelContext) -> Bool {
         guard let space = currentSpace,

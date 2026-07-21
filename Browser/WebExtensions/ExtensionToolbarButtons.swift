@@ -35,7 +35,7 @@ struct ExtensionToolbarButtons: View {
 private struct ExtensionActionButton: View {
     let extensionID: String
     let extensionName: String
-    let action: WKWebExtensionAction
+    let action: WKWebExtension.Action
     let tab: BrowserTab?
 
     var body: some View {

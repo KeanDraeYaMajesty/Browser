@@ -6,11 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// View that displays the search suggestions
 struct SearchSuggestionResultsView: View {
     
-    @Environment(\.modelContext) var modelContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(BrowserWindowState.self) var browserWindowState
     
     var searchManager: SearchManager
