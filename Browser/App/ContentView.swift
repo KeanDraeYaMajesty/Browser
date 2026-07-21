@@ -44,6 +44,45 @@ struct ContentView: View {
                     .background(.ultraThinMaterial)
                     .cornerRadius(16)
             }
+            .onAppear {
+                ExtensionManager.shared.activeWindowState = browserWindowState
+                ExtensionManager.shared.registerWindow(
+                    state: browserWindowState,
+                    nsWindow: NSApp.keyWindow,
+                    isPrivate: browserWindowState.isNoTraceWindow
+                )
+            }
+            .onDisappear {
+                ExtensionManager.shared.unregisterWindow(state: browserWindowState)
+            }
+            .background(ExtensionWindowBridge())
+    }
+}
 
+/// Keeps ExtensionManager's active model context / window wiring in sync with the SwiftUI hierarchy.
+private struct ExtensionWindowBridge: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(BrowserWindowState.self) private var browserWindowState
+    @State private var previousTabID: UUID?
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onAppear {
+                ExtensionManager.shared.activeModelContext = modelContext
+                ExtensionManager.shared.activeWindowState = browserWindowState
+                previousTabID = browserWindowState.currentSpace?.currentTab?.id
+            }
+            .onChange(of: browserWindowState.currentSpace?.currentTab?.id) { _, newValue in
+                let space = browserWindowState.currentSpace
+                let previousTab = previousTabID.flatMap { id in
+                    space?.allTabs.first(where: { $0.id == id })
+                }
+                let newTab = space?.currentTab
+                ExtensionManager.shared.activeWindowState = browserWindowState
+                ExtensionManager.shared.activeModelContext = modelContext
+                ExtensionManager.shared.notifyTabActivated(newTab: newTab, previousTab: previousTab)
+                previousTabID = newValue
+            }
     }
 }

@@ -21,6 +21,10 @@ struct SettingsView: View {
             Tab("Keyboard Shortcuts", systemImage: "command") {
                 SettingsShortcutsView()
             }
+
+            Tab("Extensions", systemImage: "puzzlepiece.extension") {
+                SettingsExtensionsView()
+            }
         }
     }
 }

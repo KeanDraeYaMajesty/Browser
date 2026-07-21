@@ -175,6 +175,8 @@ struct ConditionalToolbarRemover: ViewModifier {
                         Label("Reload", systemImage: "arrow.trianglehead.clockwise")
                     }
                     .help("Reload")
+
+                    ExtensionToolbarButtons()
                 }
             }
         }

@@ -30,10 +30,7 @@ class WKWebViewController: NSViewController {
         self.browserSpace = browserSpace
         self.userPreferences = userPreferences
 
-        self.configuration = SharedWebViewConfiguration.shared.configuration
-        if noTrace {
-            self.configuration.websiteDataStore = .nonPersistent()
-        }
+        self.configuration = SharedWebViewConfiguration.shared.makeConfiguration(noTrace: noTrace)
 
         self.webView = MyWKWebView(frame: .zero, configuration: self.configuration)
 
@@ -44,10 +41,9 @@ class WKWebViewController: NSViewController {
         view = webView
 
         webView.allowsBackForwardNavigationGestures = true
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15 (Browser)"
         webView.allowsMagnification = true
-    webView.allowsLinkPreview = true // TODO: Implement my own preview later...
-    webView.isInspectable = true
+        webView.allowsLinkPreview = true // TODO: Implement my own preview later...
+        webView.isInspectable = true
 
         // Make webView background transparent
         webView.setValue(false, forKey: "drawsBackground")

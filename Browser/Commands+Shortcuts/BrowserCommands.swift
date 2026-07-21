@@ -20,6 +20,10 @@ struct BrowserCommands: Commands {
             Button("Acknowledgements...") {
                 browserActiveWindowState?.showAcknowledgements.toggle()
             }
+
+            Button("Install Extension…") {
+                ExtensionManager.shared.presentInstallPanel()
+            }
             
             Button("Set as Default Browser") {
                 let appURL = Bundle.main.bundleURL

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Zero Sample Extension",
+  "version": "1.0.0",
+  "description": "Minimal MV3 extension for verifying WKWebExtension support in Zero.",
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_title": "Zero Sample",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
